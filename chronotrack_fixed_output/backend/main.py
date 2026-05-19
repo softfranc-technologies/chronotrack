@@ -790,6 +790,8 @@ async def send_daily_summary_email(
     except email_service.EmailConfigError as exc:
         raise HTTPException(503, f"Email not configured: {exc}")
     except Exception as exc:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(500, f"Failed to send email: {exc}")
 
     # ── Log a notification ────────────────────────────────────────────────
