@@ -10,7 +10,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
+IST = timezone(timedelta(hours=5, minutes=30))
 from bson import ObjectId
 import jwt
 import bcrypt
@@ -78,7 +79,7 @@ def _t2m(t: str) -> int:
 def _make_token(uid: str, role: str, email: str) -> str:
     payload = {
         "sub": uid, "role": role, "email": email,
-        "exp": datetime.now() + timedelta(hours=24),
+        "exp": datetime.now(IST) + timedelta(hours=24),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
 
@@ -252,7 +253,7 @@ async def register(body: RegisterBody):
         "password_hash": hashed, "role": role,
         "department": body.department, "employment_type": body.employment_type,
         "shift": body.shift, "manager_id": body.manager_id,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(IST).isoformat(),
     }
     r = await col_users.insert_one(doc)
     doc["id"] = str(r.inserted_id)
@@ -286,7 +287,7 @@ async def create_user(body: RegisterBody, u=Depends(require("admin"))):
         "password_hash": hashed, "role": role,
         "department": body.department, "employment_type": body.employment_type,
         "shift": body.shift, "manager_id": body.manager_id,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(IST).isoformat(),
     }
     r = await col_users.insert_one(doc)
     doc["id"] = str(r.inserted_id)
@@ -304,7 +305,7 @@ async def list_clients(u=Depends(get_current_user)):
 
 @app.post("/api/clients", status_code=201)
 async def create_client(body: ClientCreate, u=Depends(require("admin"))):
-    doc = {**body.dict(), "created_at": datetime.utcnow().isoformat()}
+    doc = {**body.dict(), "created_at": datetime.now(IST).isoformat()}
     r = await col_clients.insert_one(doc)
     doc["id"] = str(r.inserted_id)
     return doc
@@ -321,7 +322,7 @@ async def list_projects(u=Depends(get_current_user)):
 
 @app.post("/api/projects", status_code=201)
 async def create_project(body: ProjectCreate, u=Depends(require("admin", "manager"))):
-    doc = {**body.dict(), "status": "active", "created_by": u["id"], "created_at": datetime.utcnow().isoformat()}
+    doc = {**body.dict(), "status": "active", "created_by": u["id"], "created_at": datetime.now(IST).isoformat()}
     # FIND: create_project function, the last 3 lines:
     r = await col_projects.insert_one(doc)
     doc["id"] = str(r.inserted_id)
@@ -357,7 +358,7 @@ async def create_task(body: TaskCreate, u=Depends(require("admin", "manager", "e
         **body.dict(),
         "name": body.name.strip(),
         "created_by": u["id"],
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(IST).isoformat(),
     }
     r = await col_tasks.insert_one(doc)
     doc["id"] = str(r.inserted_id)
@@ -392,7 +393,7 @@ async def timer_start(body: TimerStart, u=Depends(get_current_user)):
 
     task_name = body.task_name.strip() if body.task_name else ""
 
-    now = datetime.utcnow()
+    now = datetime.now(IST)
     now_iso = now.isoformat()
     # Shift to client's local time using the browser-supplied UTC offset
     local_now  = now + timedelta(minutes=body.tz_offset_mins)
@@ -442,7 +443,7 @@ async def timer_stop(body: TimerStop, u=Depends(get_current_user)):
     if entry["status"] != "running":
         raise HTTPException(400, "This entry is not running.")
 
-    now      = datetime.utcnow()
+    now      = datetime.now(IST)
     # Shift to client's local time using the browser-supplied UTC offset
     local_now = now + timedelta(minutes=body.tz_offset_mins)
     end_time  = local_now.strftime("%H:%M")
@@ -532,7 +533,7 @@ async def create_entry(body: EntryCreate, u=Depends(get_current_user)):
             f"Time {body.start_time}–{body.end_time} overlaps with an existing entry on {body.date}"
         )
     holiday = await col_holidays.find_one({"date": body.date})
-    now_iso = datetime.utcnow().isoformat()
+    now_iso = datetime.now(IST).isoformat()
     doc = {
         "user_id":        u["id"],
         "project_id":     body.project_id,
@@ -575,7 +576,7 @@ async def update_entry(eid: str, body: EntryUpdate, u=Depends(get_current_user))
         raise HTTPException(400, "End time must be after start time")
     upd["duration_mins"] = mins
     upd["is_overtime"] = mins > 480
-    upd["updated_at"] = datetime.utcnow().isoformat()
+    upd["updated_at"] = datetime.now(IST).isoformat()
     await col_entries.update_one({"_id": _oid(eid)}, {"$set": upd})
     doc = await col_entries.find_one({"_id": _oid(eid)})
     return _serialize(doc)
@@ -597,7 +598,7 @@ async def delete_entry(eid: str, u=Depends(get_current_user)):
 async def submit_week(u=Depends(get_current_user)):
     res = await col_entries.update_many(
         {"user_id": u["id"], "status": "draft"},   # "running" entries excluded intentionally
-        {"$set": {"status": "submitted", "submitted_at": datetime.utcnow().isoformat()}}
+        {"$set": {"status": "submitted", "submitted_at": datetime.now(IST).isoformat()}}
     )
     return {"submitted": res.modified_count}
 
@@ -611,7 +612,7 @@ async def bulk_approve(user_id: str, body: ActionComment, u=Depends(require("man
     await col_notifs.insert_one({
         "user_id": user_id, "type": "success",
         "message": f"Your timesheet was approved by {u['name']}.",
-        "is_read": False, "created_at": datetime.utcnow().isoformat(),
+        "is_read": False, "created_at": datetime.now(IST).isoformat(),
     })
     return {"approved": res.modified_count}
 
@@ -625,7 +626,7 @@ async def bulk_reject(user_id: str, body: ActionComment, u=Depends(require("mana
     await col_notifs.insert_one({
         "user_id": user_id, "type": "error",
         "message": f"Your timesheet was rejected by {u['name']}. Reason: {body.comment or 'None'}",
-        "is_read": False, "created_at": datetime.utcnow().isoformat(),
+        "is_read": False, "created_at": datetime.now(IST).isoformat(),
     })
     return {"rejected": res.modified_count}
 
@@ -707,7 +708,7 @@ async def send_daily_summary_email(
     from bson import ObjectId as BsonOid
 
     # ── Resolve date ──────────────────────────────────────────────────────
-    target_date = body.date or datetime.utcnow().strftime("%Y-%m-%d")
+    target_date = body.date or datetime.now(IST).strftime("%Y-%m-%d")
     try:
         datetime.strptime(target_date, "%Y-%m-%d")
     except ValueError:
@@ -798,7 +799,7 @@ async def send_daily_summary_email(
         "type":       "success",
         "message":    f"Daily summary email sent for {date_label} to {', '.join(result['recipients'])}.",
         "is_read":    False,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(IST).isoformat(),
     })
 
     return {
@@ -820,7 +821,7 @@ async def preview_daily_summary(
     Returns the JSON data that would be emailed — useful for frontend
     preview and debugging without actually sending.
     """
-    target_date = date or datetime.utcnow().strftime("%Y-%m-%d")
+    target_date = date or datetime.now(IST).strftime("%Y-%m-%d")
 
     entries = await col_entries.find({
         "user_id": u["id"],
@@ -958,7 +959,7 @@ async def seed():
     ]
     client_ids = []
     for name, ind in raw_clients:
-        r = await col_clients.insert_one({"name": name, "industry": ind, "created_at": datetime.utcnow().isoformat()})
+        r = await col_clients.insert_one({"name": name, "industry": ind, "created_at": datetime.now(IST).isoformat()})
         client_ids.append(str(r.inserted_id))
 
     # Admin
@@ -966,7 +967,7 @@ async def seed():
         "name": "Admin HR", "email": "admin@admin.company.com",
         "password_hash": pw, "role": "admin", "department": "HR",
         "employment_type": "payroll", "shift": 1, "manager_id": None,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(IST).isoformat(),
     })
 
     # Managers
@@ -981,7 +982,7 @@ async def seed():
             "name": name, "email": email, "password_hash": pw,
             "role": "manager", "department": dept,
             "employment_type": "payroll", "shift": shift, "manager_id": None,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(IST).isoformat(),
         })
         mgr_ids.append(str(r.inserted_id))
 
@@ -1012,7 +1013,7 @@ async def seed():
             "role": "employee", "department": dept,
             "employment_type": etype, "shift": shift,
             "manager_id": mgr_ids[midx],
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(IST).isoformat(),
         })
         emp_ids.append(str(r.inserted_id))
 
@@ -1036,7 +1037,7 @@ async def seed():
             "name": name, "client_id": client_ids[ci],
             "billing_rate": rate, "currency": "USD", "color": color,
             "assigned_employees": assigned, "status": "active",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(IST).isoformat(),
         })
         proj_ids.append(str(r.inserted_id))
         proj_rates.append(rate)
@@ -1057,7 +1058,7 @@ async def seed():
     for pi, pid in enumerate(proj_ids):
         task_ids_by_proj[pid] = []
         for tn in task_groups[pi]:
-            r = await col_tasks.insert_one({"project_id": pid, "name": tn, "created_at": datetime.utcnow().isoformat()})
+            r = await col_tasks.insert_one({"project_id": pid, "name": tn, "created_at": datetime.now(IST).isoformat()})
             task_ids_by_proj[pid].append(str(r.inserted_id))
 
     # Build assigned map
@@ -1071,7 +1072,7 @@ async def seed():
 
     # Time entries - 12 weeks per employee
     entries_bulk = []
-    now = datetime.utcnow()
+    now = datetime.now(IST)
     holiday_dates = {"2025-01-26","2025-03-31","2025-08-15","2025-10-02","2025-11-12","2025-12-25"}
     verbs = ["Working on","Implementing","Reviewing","Testing","Designing","Debugging"]
 
@@ -1110,11 +1111,11 @@ async def seed():
                     "is_holiday": False,
                     "is_overtime": dur > 480,
                     "status": st,
-                    "submitted_at": datetime.utcnow().isoformat() if st != "draft" else None,
+                    "submitted_at": datetime.now(IST).isoformat() if st != "draft" else None,
                     "approved_by": None,
                     "approval_comment": None,
-                    "created_at": datetime.utcnow().isoformat(),
-                    "updated_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(IST).isoformat(),
+                    "updated_at": datetime.now(IST).isoformat(),
                 })
 
     if entries_bulk:
@@ -1126,10 +1127,10 @@ async def seed():
         await col_notifs.insert_many([
             {"user_id": str(admin_doc["_id"]), "type": "success",
              "message": "Welcome to ChronoTrack! Demo data has been seeded successfully.",
-             "is_read": False, "created_at": datetime.utcnow().isoformat()},
+             "is_read": False, "created_at": datetime.now(IST).isoformat()},
             {"user_id": str(admin_doc["_id"]), "type": "info",
              "message": f"{len(emp_ids)} employees and {len(entries_bulk)} time entries loaded.",
-             "is_read": False, "created_at": datetime.utcnow().isoformat()},
+             "is_read": False, "created_at": datetime.now(IST).isoformat()},
         ])
 
     return {
