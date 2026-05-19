@@ -10,6 +10,8 @@ from email.mime.text import MIMEText
 from datetime import datetime
 from typing import List, Optional
 import os
+import json as _json
+import urllib.request
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -337,7 +339,6 @@ def send_daily_summary(
 
     context = ssl.create_default_context()
 
-    import urllib.request, json as _json
 payload = _json.dumps({
     "from": f"ChronoTrack <{SMTP_FROM}>",
     "to": to_addresses,
