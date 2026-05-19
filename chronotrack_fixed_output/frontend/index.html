@@ -600,7 +600,7 @@ kbd{display:inline-block;padding:.1rem .35rem;border-radius:4px;background:var(-
 
 <script>
 'use strict';
-function _defaultApi(){const stored=localStorage.getItem('ct_api');if(stored!==null)return stored;return 'http://localhost:5000';}
+function _defaultApi(){const stored=localStorage.getItem('ct_api');if(stored!==null)return stored;return 'https://chronotrack-1-a8sh.onrender.com';}
 let API=_defaultApi();
 if(window.location.protocol==='file:'){document.addEventListener('DOMContentLoaded',()=>{const warn=document.createElement('div');warn.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#d97706;color:#fff;padding:12px 20px;font-size:14px;font-weight:600;text-align:center';warn.innerHTML='⚠️ Running from file:// — fetch() is blocked. Please serve via: <code style="background:rgba(0,0,0,.2);padding:2px 8px;border-radius:4px">cd frontend && python -m http.server 8080</code> then open <a href="http://localhost:8080" style="color:#fff;text-decoration:underline">http://localhost:8080</a>';document.body.prepend(warn);});}
 let CU=null,TOK=null,PROJS=[],TASKS=[],CLIENTS=[],USERS=[];
