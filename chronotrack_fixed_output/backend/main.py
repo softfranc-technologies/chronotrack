@@ -78,7 +78,7 @@ def _t2m(t: str) -> int:
 def _make_token(uid: str, role: str, email: str) -> str:
     payload = {
         "sub": uid, "role": role, "email": email,
-        "exp": datetime.utcnow() + timedelta(hours=24),
+        "exp": datetime.now() + timedelta(hours=24),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
 
