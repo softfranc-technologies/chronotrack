@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
 SMTP_HOST     = os.getenv("SMTP_HOST", "smtp.gmail.com")
@@ -22,7 +23,7 @@ SMTP_USER     = os.getenv("SMTP_USER", "")          # sender email
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")      # app password / SMTP password
 SMTP_FROM     = os.getenv("SMTP_FROM", SMTP_USER)   # "From" display address
 SMTP_TLS      = os.getenv("SMTP_TLS", "true").lower() == "true"
-
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 
 # ── EMAIL TEMPLATE ────────────────────────────────────────────────────────────
 
@@ -336,17 +337,20 @@ def send_daily_summary(
 
     context = ssl.create_default_context()
 
-    if SMTP_TLS:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.ehlo()
-            server.starttls(context=context)
-            server.ehlo()
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(SMTP_FROM, all_recipients, msg.as_string())
-    else:
-        # SSL on port 465
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context) as server:
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(SMTP_FROM, all_recipients, msg.as_string())
-
-    return {"sent": True, "recipients": all_recipients}
+    import urllib.request, json as _json
+payload = _json.dumps({
+    "from": f"ChronoTrack <{SMTP_FROM}>",
+    "to": to_addresses,
+    "cc": cc_addresses or [],
+    "subject": f"📋 Daily Work Summary – {employee_name} – {date_label}",
+    "html": html_body,
+}).encode()
+req = urllib.request.Request(
+    "https://api.resend.com/emails",
+    data=payload,
+    headers={
+        "Authorization": f"Bearer {RESEND_API_KEY}",
+        "Content-Type": "application/json",
+    },
+)
+urllib.request.urlopen(req)
