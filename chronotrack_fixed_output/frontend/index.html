@@ -645,13 +645,24 @@ async function doLogin(){
   const btn=document.getElementById('lbtn');
   btn.disabled=true;document.getElementById('ltxt').innerHTML='<span class="spin"></span> Signing in…';
   try{
-    const d=await api('POST','/api/auth/login',{email:em,password:pw});
+    const baseUrl=API||'';
+    const res=await fetch(baseUrl+'/api/auth/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:em,password:pw})
+    });
+    if(!res.ok){
+      let msg='Login failed';
+      try{const j=await res.json();msg=j.detail||j.message||msg;}catch{}
+      throw new Error(msg);
+    }
+    const d=await res.json();
     TOK=d.access_token;CU=d.user;
     localStorage.setItem('ct_tok',TOK);localStorage.setItem('ct_user',JSON.stringify(CU));
     document.getElementById('lscreen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     await boot();
-  }catch(e){er.textContent=e.message;er.classList.remove('hidden');}
+  }catch(e){er.textContent=e.message||'Login failed. Please try again.';er.classList.remove('hidden');}
   finally{btn.disabled=false;document.getElementById('ltxt').textContent='Sign In';}
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!document.getElementById('lscreen').classList.contains('hidden'))doLogin();});
@@ -1595,61 +1606,73 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function sendDailyEmail() {
-  // Validate
-  const dateVal   = document.getElementById('email-date').value || new Date().toISOString().split('T')[0];
-  const rcptRaw   = document.getElementById('email-recipients').value.trim();
-  const ccRaw     = document.getElementById('email-cc').value.trim();
+  const dateVal  = document.getElementById('email-date').value || new Date().toISOString().split('T')[0];
+  const rcptRaw  = document.getElementById('email-recipients').value.trim();
+  const ccRaw    = document.getElementById('email-cc').value.trim();
 
-  const recipient_emails = rcptRaw
-    ? rcptRaw.split(',').map(s => s.trim()).filter(Boolean)
-    : [];
-  const cc_emails = ccRaw
-    ? ccRaw.split(',').map(s => s.trim()).filter(Boolean)
-    : [];
+  const recipient_emails = rcptRaw ? rcptRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const cc_emails        = ccRaw   ? ccRaw.split(',').map(s=>s.trim()).filter(Boolean)   : [];
 
-  // Email format check
+  if (!recipient_emails.length) {
+    _showEmailError('Please enter at least one recipient email address in the "To" field.');
+    return;
+  }
+
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const allEmails = [...recipient_emails, ...cc_emails];
-  for (const em of allEmails) {
-    if (!emailRe.test(em)) {
-      _showEmailError(`"${em}" is not a valid email address.`);
-      return;
-    }
+  for (const em of [...recipient_emails, ...cc_emails]) {
+    if (!emailRe.test(em)) { _showEmailError(`"${em}" is not a valid email address.`); return; }
   }
 
   document.getElementById('email-error').classList.add('hidden');
   _emailSetState('loading');
 
-  const btn = document.getElementById('email-send-btn');
+  const btn    = document.getElementById('email-send-btn');
   const btnTxt = document.getElementById('email-send-txt');
   btn.disabled = true;
   btnTxt.innerHTML = '<span class="spin"></span> Sending…';
 
-  try {
-    const result = await api('POST', '/api/email/send-daily-summary', {
-      date: dateVal,
-      recipient_emails,
-      cc_emails,
-    });
+  // 30-second timeout guard — FIXES infinite loading
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), 30000);
 
-    // Success
+  try {
+    const baseUrl = API || '';
+    const res = await fetch(baseUrl + '/api/email/send-daily-summary', {
+      method:  'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+TOK},
+      body:    JSON.stringify({date:dateVal, recipient_emails, cc_emails}),
+      signal:  controller.signal,
+    });
+    clearTimeout(tid);
+
+    let result = {};
+    try { result = await res.json(); } catch {}
+
+    if (!res.ok) {
+      throw new Error(result.detail || result.message || `Server error (${res.status})`);
+    }
+
     const total = result.total_mins || 0;
-    const th = Math.floor(total / 60), tm = total % 60;
+    const th = Math.floor(total/60), tm = total%60;
     document.getElementById('email-success-msg').innerHTML =
-      `Sent to <strong>${result.recipients.join(', ')}</strong><br>
-       <small>${result.entry_count} entries · ${th}h ${tm}m logged · ${result.projects} project${result.projects !== 1 ? 's' : ''}</small>`;
+      `Sent to <strong>${(result.recipients||[]).join(', ')}</strong><br>
+       <small>${result.entry_count} entries · ${th}h ${tm}m logged · ${result.projects} project${result.projects!==1?'s':''}</small>`;
 
     _emailSetState('success');
     showT('Daily summary emailed! 📧', 'ok');
-
-    // Refresh notification badge
     await loadNBadge();
 
-  } catch (e) {
-    _emailSetState('form');
-    _showEmailError(e.message || 'Failed to send email. Check SMTP configuration.');
+  } catch(e) {
+    clearTimeout(tid);
+    _emailSetState('form');   // ← FIXES: always reset loading state
     btn.disabled = false;
     btnTxt.innerHTML = '📤 Send Email';
+    if (e.name === 'AbortError') {
+      _showEmailError('Request timed out (30s). Check your internet and try again.');
+    } else {
+      _showEmailError(e.message || 'Failed to send email. Check SMTP config in .env file.');
+    }
+    console.error('[ChronoTrack] sendDailyEmail error:', e);
   }
 }
 

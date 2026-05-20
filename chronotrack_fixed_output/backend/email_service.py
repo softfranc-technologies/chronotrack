@@ -18,10 +18,13 @@ load_dotenv()
 
 SMTP_HOST     = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT     = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER     = os.getenv("SMTP_USER", "")          # sender email
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")      # app password / SMTP password
-SMTP_FROM     = os.getenv("SMTP_FROM", SMTP_USER)   # "From" display address
+SMTP_USER     = os.getenv("SMTP_USER", "").strip()
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "").replace(" ", "")  # Gmail App Password spaces strip
+SMTP_FROM     = os.getenv("SMTP_FROM", SMTP_USER).strip()
+SMTP_TIMEOUT  = int(os.getenv("SMTP_TIMEOUT", "10"))
 SMTP_TLS      = os.getenv("SMTP_TLS", "true").lower() == "true"
+SMTP_TIMEOUT  = int(os.getenv("SMTP_TIMEOUT", "10"))
+COMPANY_NAME  = os.getenv("COMPANY_NAME", "ChronoTrack")
 
 
 # ── EMAIL TEMPLATE ────────────────────────────────────────────────────────────
@@ -275,7 +278,9 @@ def _build_html(
 class EmailConfigError(Exception):
     """Raised when SMTP credentials are not configured."""
     pass
-
+class EmailSendError(Exception):
+    """Raised when SMTP send fails."""
+    pass
 
 def send_daily_summary(
     to_addresses: List[str],
@@ -336,17 +341,129 @@ def send_daily_summary(
 
     context = ssl.create_default_context()
 
-    if SMTP_TLS:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.ehlo()
-            server.starttls(context=context)
-            server.ehlo()
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(SMTP_FROM, all_recipients, msg.as_string())
-    else:
-        # SSL on port 465
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context) as server:
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(SMTP_FROM, all_recipients, msg.as_string())
+    try:
+        if SMTP_TLS:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as server:
+                server.ehlo()
+                server.starttls(context=context)
+                server.ehlo()
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.sendmail(SMTP_FROM, all_recipients, msg.as_string())
+        else:
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context, timeout=SMTP_TIMEOUT) as server:
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.sendmail(SMTP_FROM, all_recipients, msg.as_string())
+    except smtplib.SMTPAuthenticationError as exc:
+        raise EmailSendError(
+            "Gmail authentication failed. Use an App Password (not your account password). "
+            f"Detail: {exc}"
+        ) from exc
+    except smtplib.SMTPConnectError as exc:
+        raise EmailSendError(f"Cannot connect to {SMTP_HOST}:{SMTP_PORT}. Detail: {exc}") from exc
+    except TimeoutError as exc:
+        raise EmailSendError(f"SMTP timed out after {SMTP_TIMEOUT}s. Check credentials/network.") from exc
+    except smtplib.SMTPException as exc:
+        raise EmailSendError(f"SMTP error: {exc}") from exc
 
     return {"sent": True, "recipients": all_recipients}
+
+def send_login_notification(
+    user_name: str,
+    user_email: str,
+    login_date: str,
+    login_time: str,
+    browser: str = "Unknown",
+    ip_address: str = "Unknown",
+    location: str = "—",
+) -> dict:
+    """Send login activity notification email. Never raises — failures are logged silently."""
+    import logging
+    log = logging.getLogger("chronotrack.email")
+
+    if not SMTP_USER or not SMTP_PASSWORD:
+        log.warning("Login notification skipped — SMTP not configured.")
+        return {"sent": False, "error": "SMTP not configured"}
+
+    rows_html = "".join(f"""
+        <tr>
+          <td style="padding:10px 14px;font-size:13px;font-weight:600;color:#374151;
+                     background:#f8f9fc;border-bottom:1px solid #e5e7eb;width:38%">{label}</td>
+          <td style="padding:10px 14px;font-size:13px;color:#1f2937;
+                     border-bottom:1px solid #e5e7eb">{value or "—"}</td>
+        </tr>"""
+        for label, value in [
+            ("👤 User Name", user_name),
+            ("📧 Email", user_email),
+            ("📅 Login Date", login_date),
+            ("🕐 Login Time", login_time),
+            ("🖥 Device / Browser", browser[:100]),
+            ("🌐 IP Address", ip_address),
+            ("📍 Location", location),
+        ]
+    )
+
+    html_body = f"""<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f3f4f8;font-family:sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px">
+  <tr><td align="center">
+    <table width="100%" style="max-width:560px">
+      <tr><td style="background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:12px 12px 0 0;padding:24px 32px">
+        <div style="font-size:20px;font-weight:800;color:#fff">🔐 {COMPANY_NAME}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">Login Activity Notification</div>
+      </td></tr>
+      <tr><td style="background:#fff;padding:24px 32px;border:1px solid #e5e7eb;border-top:none">
+        <div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:8px">New sign-in detected</div>
+        <div style="font-size:13px;color:#6b7280;margin-bottom:20px">
+          Hi <strong>{user_name}</strong>, a new login was detected on your {COMPANY_NAME} account.
+          If this wasn't you, change your password immediately.
+        </div>
+        <table width="100%" style="border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+          {rows_html}
+        </table>
+      </td></tr>
+      <tr><td style="background:#fffbeb;padding:12px 32px;border:1px solid #fcd34d">
+        <div style="font-size:12px;color:#92400e">
+          ⚠️ <strong>Security:</strong> {COMPANY_NAME} will never ask for your password via email.
+        </div>
+      </td></tr>
+      <tr><td style="background:#1e1b4b;border-radius:0 0 12px 12px;padding:14px 32px">
+        <div style="font-size:11px;color:rgba(255,255,255,.5)">
+          Sent automatically by {COMPANY_NAME} · {datetime.utcnow().strftime("%d %b %Y %H:%M UTC")}
+        </div>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>"""
+
+    plain_body = (
+        f"New login to {COMPANY_NAME}\n\n"
+        f"User: {user_name} ({user_email})\nDate: {login_date}\nTime: {login_time}\n"
+        f"Browser: {browser}\nIP: {ip_address}\n\n"
+        "If this wasn't you, change your password immediately."
+    )
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"🔐 New Login Detected – {COMPANY_NAME}"
+    msg["From"]    = f"{COMPANY_NAME} Security <{SMTP_FROM}>"
+    msg["To"]      = user_email
+    msg.attach(MIMEText(plain_body, "plain", "utf-8"))
+    msg.attach(MIMEText(html_body,  "html",  "utf-8"))
+
+    try:
+        context = ssl.create_default_context()
+        if SMTP_TLS:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as server:
+                server.ehlo(); server.starttls(context=context); server.ehlo()
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.sendmail(SMTP_FROM, [user_email], msg.as_string())
+        else:
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context, timeout=SMTP_TIMEOUT) as server:
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.sendmail(SMTP_FROM, [user_email], msg.as_string())
+        log.info("Login notification sent to %s", user_email)
+        return {"sent": True, "recipient": user_email}
+    except Exception as exc:
+        log.error("Login notification failed for %s: %s", user_email, exc)
+        return {"sent": False, "error": str(exc)}

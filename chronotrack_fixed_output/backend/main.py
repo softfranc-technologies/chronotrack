@@ -4,7 +4,7 @@ Run: uvicorn main:app --reload --port 5000
 Docs: http://localhost:5000/docs
 """
 
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
@@ -50,6 +50,7 @@ col_projects = db["projects"]
 col_tasks    = db["tasks"]
 col_clients  = db["clients"]
 col_notifs   = db["notifications"]
+col_login_logs  = db["login_logs"]    
 col_holidays = db["holidays"]
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -200,6 +201,7 @@ async def startup():
     await col_entries.create_index([("user_id", 1), ("date", 1)])
     await col_entries.create_index("status")
     await col_entries.create_index([("user_id", 1), ("status", 1)])
+    await col_login_logs.create_index([("user_id", 1), ("logged_at", -1)])
     for attempt in range(10):
         try:
             await mongo_client.admin.command("ping")
@@ -228,13 +230,47 @@ async def health():
 # ── AUTH ─────────────────────────────────────────────────────────────────────
 
 @app.post("/api/auth/login")
-async def login(body: LoginBody):
+async def login(body: LoginBody, request: Request, background_tasks: BackgroundTasks):
     user = await col_users.find_one({"email": body.email.lower().strip()})
     if not user:
         raise HTTPException(401, "Invalid email or password")
     if not bcrypt.checkpw(body.password.encode(), user["password_hash"].encode()):
         raise HTTPException(401, "Invalid email or password")
     token = _make_token(str(user["_id"]), user["role"], user["email"])
+
+    # IP address capture
+    ip = (request.headers.get("X-Forwarded-For") or "").split(",")[0].strip() \
+         or request.headers.get("X-Real-IP") \
+         or (request.client.host if request.client else "Unknown")
+    ua       = request.headers.get("User-Agent", "Unknown")
+    now      = datetime.utcnow()
+    log_date = now.strftime("%d %B %Y")
+    log_time = now.strftime("%H:%M:%S UTC")
+
+    # Save login log to DB
+    await col_login_logs.insert_one({
+        "user_id":    str(user["_id"]),
+        "user_name":  user["name"],
+        "user_email": user["email"],
+        "user_role":  user["role"],
+        "ip_address": ip,
+        "user_agent": ua,
+        "login_date": log_date,
+        "login_time": log_time,
+        "logged_at":  now.isoformat(),
+    })
+
+    # Send login notification email in background (never blocks login)
+    background_tasks.add_task(
+        email_service.send_login_notification,
+        user_name  = user["name"],
+        user_email = user["email"],
+        login_date = log_date,
+        login_time = log_time,
+        browser    = ua[:120],
+        ip_address = ip,
+    )
+
     return {"access_token": token, "token_type": "bearer", "user": _serialize(user)}
 
 
@@ -260,6 +296,11 @@ async def register(body: RegisterBody):
     doc.pop("password_hash")
     token = _make_token(doc["id"], role, body.email)
     return {"access_token": token, "token_type": "bearer", "user": doc}
+
+@app.get("/api/auth/login-history")
+async def login_history(limit: int = 50, u=Depends(require("admin", "manager"))):
+    docs = await col_login_logs.find({}).sort("logged_at", -1).to_list(min(limit, 200))
+    return [_serialize(d) for d in docs]
 
 
 @app.get("/api/me")
@@ -780,16 +821,18 @@ async def send_daily_summary_email(
     # ── Send email ────────────────────────────────────────────────────────
     try:
         result = email_service.send_daily_summary(
-            to_addresses    = to_addresses,
-            employee_name   = u["name"],
-            date_label      = date_label,
-            project_groups  = project_groups,
-            total_mins      = total_mins,
-            total_entries   = len(entries),
-            cc_addresses    = cc_addresses or None,
+            to_addresses   = to_addresses,
+            employee_name  = u["name"],
+            date_label     = date_label,
+            project_groups = project_groups,
+            total_mins     = total_mins,
+            total_entries  = len(entries),
+            cc_addresses   = cc_addresses or None,
         )
     except email_service.EmailConfigError as exc:
         raise HTTPException(503, f"Email not configured: {exc}")
+    except email_service.EmailSendError as exc:
+        raise HTTPException(502, str(exc))
     except Exception as exc:
         raise HTTPException(500, f"Failed to send email: {exc}")
 
