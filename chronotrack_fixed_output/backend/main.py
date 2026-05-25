@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone, timedelta
-IST = timezone(timedelta(hours=0, minutes=0))
+IST = timezone(timedelta(hours=5, minutes=30))
 from bson import ObjectId
 import jwt
 import bcrypt
@@ -245,9 +245,9 @@ async def login(body: LoginBody, request: Request, background_tasks: BackgroundT
          or request.headers.get("X-Real-IP") \
          or (request.client.host if request.client else "Unknown")
     ua       = request.headers.get("User-Agent", "Unknown")
-    now      = datetime.utcnow()
+    now      = datetime.now(IST)
     log_date = now.strftime("%d %B %Y")
-    log_time = now.strftime("%H:%M:%S UTC")
+    log_time = now.strftime("%H:%M:%S IST")
 
     # Save login log to DB
     await col_login_logs.insert_one({
@@ -1255,9 +1255,9 @@ async def mark_attendance_manual(u=Depends(get_current_user)):
     if existing:
         return {"marked": False, "message": "Attendance already marked for today", "record": _serialize(existing)}
 
-    now = datetime.utcnow()
+    now = datetime.now(IST)
     login_date = now.strftime("%d %B %Y")
-    login_time = now.strftime("%H:%M:%S UTC")
+    login_time = now.strftime("%H:%M:%S IST")
 
     doc = {
         "user_id":      u["id"],
