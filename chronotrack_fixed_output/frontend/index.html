@@ -224,6 +224,7 @@ kbd{display:inline-block;padding:.1rem .35rem;border-radius:4px;background:var(-
       <div class="nitem mgr-only hidden" data-page="approvals" onclick="goPage('approvals',this)"><span class="nico">✅</span><span>Approvals</span><span id="abadge" class="nbadge hidden" style="position:static;margin-left:auto">0</span></div>
       <div class="nitem" data-page="reports" onclick="goPage('reports',this)"><span class="nico">📈</span><span>Reports</span></div>
       <div class="nitem adm-only hidden" data-page="admin" onclick="goPage('admin',this)"><span class="nico">⚙️</span><span>Admin</span></div>
+      <div class="nitem" data-page="attendance" onclick="goPage('attendance',this)"><span class="nico">📋</span><span>Attendance</span></div>
       <div class="nitem" data-page="settings" onclick="goPage('settings',this)"><span class="nico">🔧</span><span>Settings</span></div>
     </nav>
     <div class="sfooter"><div id="suser" class="suser"></div><div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:8px;">Made by Sneha Dwivedi</div></div>
@@ -422,6 +423,74 @@ kbd{display:inline-block;padding:.1rem .35rem;border-radius:4px;background:var(-
         </div>
       </div>
     </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- ATTENDANCE PAGE                                            -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="page-attendance" class="page hidden">
+      <div class="ph">
+        <div>
+          <h2>Attendance</h2>
+          <div class="sub" id="att-subtitle">Track login-based attendance of all employees</div>
+        </div>
+        <div class="ha">
+          <button class="btn bg bsm adm-mgr-only" onclick="exportAttendance()">⬇ Export CSV</button>
+          <button class="btn bp bsm" onclick="loadAttendance()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="sgrid" id="att-stats">
+        <div class="sc"><div class="slbl">Today Present</div><div class="sval" id="att-today">—</div><div class="ssub">logged in today</div></div>
+        <div class="sc adm-mgr-only"><div class="slbl">Total Records</div><div class="sval" id="att-total">—</div><div class="ssub">in selected range</div></div>
+        <div class="sc adm-mgr-only"><div class="slbl">Employees Tracked</div><div class="sval" id="att-uniq">—</div><div class="ssub">unique employees</div></div>
+        <div class="sc adm-mgr-only"><div class="slbl">Max Days Present</div><div class="sval" id="att-max">—</div><div class="ssub">most active employee</div></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="card" style="margin-bottom:1rem">
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:.3rem">
+            <label style="font-size:.75rem;color:var(--muted);font-weight:600">FROM DATE</label>
+            <input type="date" id="att-from" class="ism" onchange="loadAttendance()"/>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.3rem">
+            <label style="font-size:.75rem;color:var(--muted);font-weight:600">TO DATE</label>
+            <input type="date" id="att-to" class="ism" onchange="loadAttendance()"/>
+          </div>
+          <div class="adm-mgr-only" style="display:flex;flex-direction:column;gap:.3rem">
+            <label style="font-size:.75rem;color:var(--muted);font-weight:600">EMPLOYEE</label>
+            <select id="att-user" class="ssm" onchange="loadAttendance()">
+              <option value="">All Employees</option>
+            </select>
+          </div>
+          <button class="btn bg bsm" onclick="clearAttFilters()">✕ Clear</button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <div class="ch"><h3>Attendance Records</h3><span id="att-count" style="font-size:.8rem;color:var(--muted)"></span></div>
+        <div class="etw">
+          <table class="etbl" id="att-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Employee Name</th>
+                <th>Role</th>
+                <th>Department</th>
+                <th>Login Time</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="att-tbody">
+              <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- ═══════════════════════════════════════════════════════════ -->
 
   </main>
 </div>
@@ -704,6 +773,8 @@ async function boot(){
   try{[PROJS,CLIENTS]=await Promise.all([api('GET','/api/projects').catch(()=>[]),api('GET','/api/clients').catch(()=>[])]);
   if(['manager','admin'].includes(CU.role))USERS=await api('GET','/api/users').catch(()=>[]);}catch{}
   fillTimerProjs();await loadNBadge();await renderDash();
+  await markAttendanceOnLogin();
+  setupAttendancePage();
   if(CU.role==='admin'){goPage('admin',document.querySelector('[data-page="admin"]'));}
 else if(CU.role==='manager'){goPage('approvals',document.querySelector('[data-page="approvals"]'));}
 else{goPage('dashboard',document.querySelector('[data-page="dashboard"]'));}
@@ -774,6 +845,7 @@ function goPage(p, el) {
   if (p === 'reports')      loadReports();
   if (p === 'admin')        loadAdmin();
   if (p === 'task-history') renderTaskHistory();
+  if (p === 'attendance')   loadAttendance();
   document.getElementById('sidebar').classList.remove('open');
 }
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');}
@@ -1811,6 +1883,167 @@ async function renderTaskHistory() {
     cont.innerHTML = '<div class="errmsg">❌ ' + e.message + '</div>';
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ATTENDANCE MANAGEMENT FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Auto-mark attendance after login (called in boot())
+async function markAttendanceOnLogin() {
+  try {
+    await api('POST', '/api/attendance/mark');
+  } catch(e) {
+    // Silent fail — attendance marking should never block login
+    console.log('Attendance mark note:', e.message);
+  }
+}
+
+// Populate employee dropdown in attendance filters (for admin/manager)
+async function populateAttUserFilter() {
+  const sel = document.getElementById('att-user');
+  if (!sel) return;
+  if (!['admin','manager'].includes(CU.role)) return;
+  try {
+    const users = USERS.length ? USERS : await api('GET', '/api/users').catch(() => []);
+    sel.innerHTML = '<option value="">All Employees</option>' +
+      users.map(u => `<option value="${u.id}">${u.name} (${u.role})</option>`).join('');
+  } catch(e) {}
+}
+
+// Load & render attendance data
+async function loadAttendance() {
+  const tbody = document.getElementById('att-tbody');
+  const countEl = document.getElementById('att-count');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">⏳ Loading attendance records...</td></tr>';
+
+  // Populate filter dropdown if admin/manager
+  await populateAttUserFilter();
+
+  // Build query params
+  const from  = document.getElementById('att-from')?.value || '';
+  const to    = document.getElementById('att-to')?.value   || '';
+  const uid   = document.getElementById('att-user')?.value || '';
+  let qs = [];
+  if (from) qs.push('from_date=' + from);
+  if (to)   qs.push('to_date='   + to);
+  if (uid)  qs.push('user_id='   + uid);
+  const query = qs.length ? '?' + qs.join('&') : '';
+
+  try {
+    // Load records + stats in parallel
+    const [records, stats] = await Promise.all([
+      api('GET', '/api/attendance' + query),
+      api('GET', '/api/attendance/stats' + query).catch(() => ({})),
+    ]);
+
+    // Update stat cards
+    document.getElementById('att-today').textContent = stats.today_present ?? '—';
+    document.getElementById('att-total').textContent = stats.total_present_records ?? records.length;
+    document.getElementById('att-uniq').textContent  = stats.unique_employees ?? '—';
+    document.getElementById('att-max').textContent   = stats.most_days_present ?? '—';
+
+    if (countEl) countEl.textContent = records.length + ' record' + (records.length !== 1 ? 's' : '');
+
+    if (!records.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">No attendance records found for the selected filters.</td></tr>';
+      return;
+    }
+
+    const roleColor = r => r === 'admin' ? 's-approved' : r === 'manager' ? 's-submitted' : 's-draft';
+    const fmtDate = d => {
+      if (!d) return '—';
+      try {
+        const [y,m,day] = d.split('-');
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return `${day} ${months[parseInt(m)-1]} ${y}`;
+      } catch { return d; }
+    };
+
+    tbody.innerHTML = records.map(r => `
+      <tr>
+        <td><strong>${fmtDate(r.date)}</strong></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <div class="aav" style="width:30px;height:30px;font-size:.75rem;flex-shrink:0">${(r.user_name||'?')[0].toUpperCase()}</div>
+            <div>
+              <div style="font-weight:600">${r.user_name || '—'}</div>
+              <div style="font-size:.75rem;color:var(--muted)">${r.user_email || ''}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="sb ${roleColor(r.user_role)}">${r.user_role || '—'}</span></td>
+        <td style="color:var(--muted)">${r.department || '—'}</td>
+        <td style="font-family:var(--fd);font-size:.9rem">${r.login_time || '—'}</td>
+        <td><span class="sb s-approved" style="background:rgba(16,185,129,.15);color:var(--ok)">✅ Present</span></td>
+      </tr>
+    `).join('');
+
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="errmsg">❌ ${e.message}</div></td></tr>`;
+  }
+}
+
+function clearAttFilters() {
+  const from = document.getElementById('att-from');
+  const to   = document.getElementById('att-to');
+  const uid  = document.getElementById('att-user');
+  if (from) from.value = '';
+  if (to)   to.value   = '';
+  if (uid)  uid.value  = '';
+  loadAttendance();
+}
+
+async function exportAttendance() {
+  const from = document.getElementById('att-from')?.value || '';
+  const to   = document.getElementById('att-to')?.value   || '';
+  let qs = [];
+  if (from) qs.push('from_date=' + from);
+  if (to)   qs.push('to_date='   + to);
+  const query = qs.length ? '?' + qs.join('&') : '';
+  const baseUrl = API || '';
+  const token   = localStorage.getItem('ct_tok') || '';
+  try {
+    const resp = await fetch(baseUrl + '/api/attendance/export' + query, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!resp.ok) { showT('Export failed', 'err'); return; }
+    const blob = await resp.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'attendance_export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showT('Attendance CSV downloaded ✅', 'ok');
+  } catch(e) {
+    showT('Export error: ' + e.message, 'err');
+  }
+}
+
+// Show/hide attendance filter elements based on role
+function setupAttendancePage() {
+  const isAdmMgr = ['admin','manager'].includes(CU.role);
+  document.querySelectorAll('.adm-mgr-only').forEach(el => {
+    el.classList.toggle('hidden', !isAdmMgr);
+  });
+  // Set default date range to current month
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const fromEl = document.getElementById('att-from');
+  const toEl   = document.getElementById('att-to');
+  if (fromEl && !fromEl.value) fromEl.value = firstDay.toISOString().slice(0,10);
+  if (toEl   && !toEl.value)   toEl.value   = today.toISOString().slice(0,10);
+
+  // Update subtitle
+  const sub = document.getElementById('att-subtitle');
+  if (sub) {
+    if (CU.role === 'employee') sub.textContent = 'Your personal attendance log';
+    else if (CU.role === 'manager') sub.textContent = 'Attendance of your team members';
+    else sub.textContent = 'Track login-based attendance of all employees';
+  }
+}
+// ═══════════════════════════════════════════════════════════════════════════
 </script>
 </body>
 </html>

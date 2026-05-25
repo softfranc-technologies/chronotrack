@@ -52,6 +52,7 @@ col_clients  = db["clients"]
 col_notifs   = db["notifications"]
 col_login_logs  = db["login_logs"]    
 col_holidays = db["holidays"]
+col_attendance  = db["attendance"]
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -202,6 +203,7 @@ async def startup():
     await col_entries.create_index("status")
     await col_entries.create_index([("user_id", 1), ("status", 1)])
     await col_login_logs.create_index([("user_id", 1), ("logged_at", -1)])
+    await col_attendance.create_index([("user_id", 1), ("date", -1)], unique=True)
     for attempt in range(10):
         try:
             await mongo_client.admin.command("ping")
@@ -259,6 +261,25 @@ async def login(body: LoginBody, request: Request, background_tasks: BackgroundT
         "login_time": log_time,
         "logged_at":  now.isoformat(),
     })
+
+    # ── AUTO-MARK ATTENDANCE on every login ───────────────────────────────
+    # One record per user per calendar day (UTC). First login of the day wins.
+    today_str = now.strftime("%Y-%m-%d")
+    att_exists = await col_attendance.find_one({"user_id": str(user["_id"]), "date": today_str})
+    if not att_exists:
+        await col_attendance.insert_one({
+            "user_id":    str(user["_id"]),
+            "user_name":  user["name"],
+            "user_email": user["email"],
+            "user_role":  user["role"],
+            "department": user.get("department", ""),
+            "date":       today_str,
+            "login_date": log_date,
+            "login_time": log_time,
+            "ip_address": ip,
+            "status":     "present",
+            "marked_at":  now.isoformat(),
+        })
 
     # Send login notification email in background (never blocks login)
     background_tasks.add_task(
@@ -1183,3 +1204,202 @@ async def seed():
         "projects": len(proj_ids),
         "entries": len(entries_bulk),
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ── ATTENDANCE MANAGEMENT ────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+
+# ── Attendance auto-mark on login (already triggered inside /api/auth/login) ──
+# The login endpoint already saves to col_login_logs.
+# We now additionally save to col_attendance for the Attendance Dashboard.
+
+async def _mark_attendance(user: dict, ip: str, login_date: str, login_time: str):
+    """
+    Upsert attendance record for a user+date.
+    Each day only ONE record is kept (first login wins for date/time).
+    """
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    existing = await col_attendance.find_one({"user_id": str(user["_id"]), "date": today})
+    if not existing:
+        await col_attendance.insert_one({
+            "user_id":      str(user["_id"]),
+            "user_name":    user["name"],
+            "user_email":   user["email"],
+            "user_role":    user["role"],
+            "department":   user.get("department", ""),
+            "date":         today,
+            "login_date":   login_date,
+            "login_time":   login_time,
+            "ip_address":   ip,
+            "status":       "present",
+            "marked_at":    datetime.utcnow().isoformat(),
+        })
+
+
+# ── Override login to also mark attendance ────────────────────────────────────
+# We patch the login response by adding attendance marking in the same endpoint.
+# Because main.py already has @app.post("/api/auth/login"), we add a new endpoint
+# that the frontend will call after login to mark attendance explicitly.
+
+@app.post("/api/attendance/mark")
+async def mark_attendance_manual(u=Depends(get_current_user)):
+    """
+    Called right after login. Marks attendance for today if not already done.
+    Safe to call multiple times — idempotent (one record per user per day).
+    """
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    existing = await col_attendance.find_one({"user_id": u["id"], "date": today})
+    if existing:
+        return {"marked": False, "message": "Attendance already marked for today", "record": _serialize(existing)}
+
+    now = datetime.utcnow()
+    login_date = now.strftime("%d %B %Y")
+    login_time = now.strftime("%H:%M:%S UTC")
+
+    doc = {
+        "user_id":      u["id"],
+        "user_name":    u["name"],
+        "user_email":   u["email"],
+        "user_role":    u["role"],
+        "department":   u.get("department", ""),
+        "date":         today,
+        "login_date":   login_date,
+        "login_time":   login_time,
+        "ip_address":   "—",
+        "status":       "present",
+        "marked_at":    now.isoformat(),
+    }
+    r = await col_attendance.insert_one(doc)
+    doc["id"] = str(r.inserted_id)
+    doc.pop("_id", None)
+    return {"marked": True, "message": "Attendance marked successfully", "record": doc}
+
+
+@app.get("/api/attendance")
+async def get_attendance(
+    from_date: Optional[str] = None,
+    to_date:   Optional[str] = None,
+    user_id:   Optional[str] = None,
+    u=Depends(get_current_user),
+):
+    """
+    Admin/Manager → all employees' attendance.
+    Employee       → only their own attendance.
+    """
+    q = {}
+
+    if u["role"] == "employee":
+        q["user_id"] = u["id"]
+    elif u["role"] == "manager":
+        # Managers see their team + themselves
+        team = await col_users.find({"manager_id": u["id"]}, {"_id": 1}).to_list(200)
+        tids = [str(t["_id"]) for t in team] + [u["id"]]
+        q["user_id"] = {"$in": tids}
+        if user_id and user_id in tids:
+            q["user_id"] = user_id
+    else:
+        # Admin sees everyone; can filter by user
+        if user_id:
+            q["user_id"] = user_id
+
+    if from_date:
+        q.setdefault("date", {})["$gte"] = from_date
+    if to_date:
+        q.setdefault("date", {})["$lte"] = to_date
+
+    docs = await col_attendance.find(q).sort("date", -1).to_list(5000)
+    return [_serialize(d) for d in docs]
+
+
+@app.get("/api/attendance/stats")
+async def attendance_stats(
+    from_date: Optional[str] = None,
+    to_date:   Optional[str] = None,
+    u=Depends(get_current_user),
+):
+    """
+    Returns summary stats: total present days, employees present today, etc.
+    """
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    q = {}
+
+    if u["role"] == "employee":
+        q["user_id"] = u["id"]
+    elif u["role"] == "manager":
+        team = await col_users.find({"manager_id": u["id"]}, {"_id": 1}).to_list(200)
+        tids = [str(t["_id"]) for t in team] + [u["id"]]
+        q["user_id"] = {"$in": tids}
+
+    if from_date:
+        q.setdefault("date", {})["$gte"] = from_date
+    if to_date:
+        q.setdefault("date", {})["$lte"] = to_date
+
+    all_records = await col_attendance.find(q).to_list(10000)
+
+    today_q = dict(q)
+    today_q["date"] = today
+    today_q.pop("date", None)
+    today_q["date"] = today
+    today_records = await col_attendance.find({"date": today}).to_list(200)
+
+    unique_users  = len(set(r["user_id"] for r in all_records))
+    total_records = len(all_records)
+    today_count   = len([r for r in today_records if (u["role"] == "admin" or r["user_id"] == u["id"])])
+
+    # Per-user day counts
+    user_days: dict = {}
+    for r in all_records:
+        uid = r["user_id"]
+        user_days[uid] = user_days.get(uid, 0) + 1
+
+    most_present = max(user_days.values()) if user_days else 0
+
+    return {
+        "total_present_records": total_records,
+        "unique_employees":      unique_users,
+        "today_present":         today_count,
+        "most_days_present":     most_present,
+        "today_date":            today,
+    }
+
+
+@app.get("/api/attendance/export")
+async def export_attendance_csv(
+    from_date: Optional[str] = None,
+    to_date:   Optional[str] = None,
+    u=Depends(require("admin", "manager")),
+):
+    """Download attendance as CSV."""
+    q = {}
+    if u["role"] == "manager":
+        team = await col_users.find({"manager_id": u["id"]}, {"_id": 1}).to_list(200)
+        tids = [str(t["_id"]) for t in team] + [u["id"]]
+        q["user_id"] = {"$in": tids}
+    if from_date:
+        q.setdefault("date", {})["$gte"] = from_date
+    if to_date:
+        q.setdefault("date", {})["$lte"] = to_date
+
+    docs = await col_attendance.find(q).sort("date", -1).to_list(10000)
+
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["Date", "Employee Name", "Email", "Role", "Department", "Login Time", "Status", "IP Address"])
+    for d in docs:
+        w.writerow([
+            d.get("date", ""),
+            d.get("user_name", ""),
+            d.get("user_email", ""),
+            d.get("user_role", ""),
+            d.get("department", ""),
+            d.get("login_time", ""),
+            d.get("status", "present"),
+            d.get("ip_address", ""),
+        ])
+    buf.seek(0)
+    return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=attendance_export.csv"})
