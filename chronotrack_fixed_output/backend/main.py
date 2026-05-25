@@ -1221,7 +1221,7 @@ async def _mark_attendance(user: dict, ip: str, login_date: str, login_time: str
     Upsert attendance record for a user+date.
     Each day only ONE record is kept (first login wins for date/time).
     """
-    today = datetime.utcnow().strftime("%Y-%m-%d")
+    today = datetime.now(IST).strftime("%Y-%m-%d")
     existing = await col_attendance.find_one({"user_id": str(user["_id"]), "date": today})
     if not existing:
         await col_attendance.insert_one({
@@ -1235,7 +1235,7 @@ async def _mark_attendance(user: dict, ip: str, login_date: str, login_time: str
             "login_time":   login_time,
             "ip_address":   ip,
             "status":       "present",
-            "marked_at":    datetime.utcnow().isoformat(),
+            "marked_at":    datetime.now(IST).isoformat(),
         })
 
 
@@ -1250,7 +1250,7 @@ async def mark_attendance_manual(u=Depends(get_current_user)):
     Called right after login. Marks attendance for today if not already done.
     Safe to call multiple times — idempotent (one record per user per day).
     """
-    today = datetime.utcnow().strftime("%Y-%m-%d")
+    today = datetime.now(IST).strftime("%Y-%m-%d")
     existing = await col_attendance.find_one({"user_id": u["id"], "date": today})
     if existing:
         return {"marked": False, "message": "Attendance already marked for today", "record": _serialize(existing)}
@@ -1323,7 +1323,7 @@ async def attendance_stats(
     """
     Returns summary stats: total present days, employees present today, etc.
     """
-    today = datetime.utcnow().strftime("%Y-%m-%d")
+    today = datetime.now(IST).strftime("%Y-%m-%d")
     q = {}
 
     if u["role"] == "employee":
@@ -1403,3 +1403,226 @@ async def export_attendance_csv(
     buf.seek(0)
     return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=attendance_export.csv"})
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ── MONTHLY ATTENDANCE REPORT  ───────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/attendance/monthly-report")
+async def monthly_attendance_report(
+    year:  int = None,
+    month: int = None,
+    u=Depends(get_current_user),
+):
+    """
+    Returns a consolidated monthly report:
+    - Each employee as a row
+    - Each day of the month as a column
+    - P = Present, A = Absent, WE = Weekend
+    - Total present days per employee
+    Admin/Manager → all employees. Employee → only self.
+    """
+    now_ist = datetime.now(IST)
+    year  = year  or now_ist.year
+    month = month or now_ist.month
+
+    # date range for the month
+    from calendar import monthrange
+    _, days_in_month = monthrange(year, month)
+    from_date = f"{year}-{month:02d}-01"
+    to_date   = f"{year}-{month:02d}-{days_in_month:02d}"
+
+    # build query
+    q = {"date": {"$gte": from_date, "$lte": to_date}}
+    if u["role"] == "employee":
+        q["user_id"] = u["id"]
+    elif u["role"] == "manager":
+        team = await col_users.find({"manager_id": u["id"]}, {"_id": 1}).to_list(200)
+        tids = [str(t["_id"]) for t in team] + [u["id"]]
+        q["user_id"] = {"$in": tids}
+
+    records = await col_attendance.find(q).to_list(10000)
+
+    # index records by (user_id, date)
+    present_map: dict = {}
+    user_info: dict = {}
+    for r in records:
+        uid  = r["user_id"]
+        date = r["date"]
+        present_map[(uid, date)] = r.get("login_time", "—")
+        if uid not in user_info:
+            user_info[uid] = {
+                "user_id":   uid,
+                "user_name": r.get("user_name", "Unknown"),
+                "user_email":r.get("user_email", ""),
+                "user_role": r.get("user_role", ""),
+                "department":r.get("department", ""),
+            }
+
+    # also fetch all users for the scope (to show absent employees too)
+    if u["role"] == "admin":
+        all_users = await col_users.find({}, {"_id":1,"name":1,"email":1,"role":1,"department":1}).to_list(500)
+    elif u["role"] == "manager":
+        team = await col_users.find({"manager_id": u["id"]}, {"_id":1,"name":1,"email":1,"role":1,"department":1}).to_list(200)
+        self_doc = await col_users.find_one({"_id": ObjectId(u["id"])}, {"_id":1,"name":1,"email":1,"role":1,"department":1})
+        all_users = team + ([self_doc] if self_doc else [])
+    else:
+        self_doc = await col_users.find_one({"_id": ObjectId(u["id"])}, {"_id":1,"name":1,"email":1,"role":1,"department":1})
+        all_users = [self_doc] if self_doc else []
+
+    # merge user_info with all_users (some may have 0 attendance)
+    for usr in all_users:
+        uid = str(usr["_id"])
+        if uid not in user_info:
+            user_info[uid] = {
+                "user_id":    uid,
+                "user_name":  usr.get("name", "Unknown"),
+                "user_email": usr.get("email", ""),
+                "user_role":  usr.get("role", ""),
+                "department": usr.get("department", ""),
+            }
+
+    # build day list with weekend flags
+    import datetime as dt_mod
+    day_list = []
+    for d in range(1, days_in_month + 1):
+        date_obj  = dt_mod.date(year, month, d)
+        date_str  = f"{year}-{month:02d}-{d:02d}"
+        is_weekend = date_obj.weekday() >= 5   # Sat=5, Sun=6
+        day_list.append({"day": d, "date": date_str, "is_weekend": is_weekend,
+                         "weekday": date_obj.strftime("%a")})
+
+    # build per-employee rows
+    rows = []
+    today_str = now_ist.strftime("%Y-%m-%d")
+    for uid, info in user_info.items():
+        days_data = []
+        present_count  = 0
+        absent_count   = 0
+        weekend_count  = 0
+        for day_info in day_list:
+            ds = day_info["date"]
+            if day_info["is_weekend"]:
+                days_data.append({"date": ds, "day": day_info["day"], "status": "WE", "login_time": ""})
+                weekend_count += 1
+            elif ds > today_str:
+                days_data.append({"date": ds, "day": day_info["day"], "status": "—", "login_time": ""})
+            elif (uid, ds) in present_map:
+                days_data.append({"date": ds, "day": day_info["day"], "status": "P",
+                                  "login_time": present_map[(uid, ds)]})
+                present_count += 1
+            else:
+                days_data.append({"date": ds, "day": day_info["day"], "status": "A", "login_time": ""})
+                absent_count += 1
+
+        working_days = days_in_month - weekend_count
+        rows.append({
+            **info,
+            "days":          days_data,
+            "present_count": present_count,
+            "absent_count":  absent_count,
+            "weekend_count": weekend_count,
+            "working_days":  working_days,
+            "attendance_pct": round((present_count / working_days * 100), 1) if working_days else 0,
+        })
+
+    # sort by name
+    rows.sort(key=lambda x: x["user_name"].lower())
+
+    return {
+        "year":          year,
+        "month":         month,
+        "month_name":    dt_mod.date(year, month, 1).strftime("%B %Y"),
+        "days_in_month": days_in_month,
+        "day_list":      day_list,
+        "rows":          rows,
+        "total_employees": len(rows),
+        "generated_at":  now_ist.strftime("%d %B %Y %H:%M IST"),
+    }
+
+
+@app.get("/api/attendance/monthly-export")
+async def export_monthly_csv(
+    year:  int = None,
+    month: int = None,
+    u=Depends(require("admin", "manager")),
+):
+    """Download monthly consolidated attendance as CSV."""
+    now_ist = datetime.now(IST)
+    year  = year  or now_ist.year
+    month = month or now_ist.month
+
+    from calendar import monthrange
+    import datetime as dt_mod
+    _, days_in_month = monthrange(year, month)
+    from_date = f"{year}-{month:02d}-01"
+    to_date   = f"{year}-{month:02d}-{days_in_month:02d}"
+
+    q = {"date": {"$gte": from_date, "$lte": to_date}}
+    if u["role"] == "manager":
+        team = await col_users.find({"manager_id": u["id"]}, {"_id": 1}).to_list(200)
+        tids = [str(t["_id"]) for t in team] + [u["id"]]
+        q["user_id"] = {"$in": tids}
+
+    records = await col_attendance.find(q).to_list(10000)
+    present_map: dict = {}
+    user_info: dict = {}
+    for r in records:
+        uid = r["user_id"]
+        present_map[(uid, r["date"])] = True
+        if uid not in user_info:
+            user_info[uid] = {"name": r.get("user_name",""), "email": r.get("user_email",""),
+                              "role": r.get("user_role",""), "dept": r.get("department","")}
+
+    if u["role"] == "admin":
+        all_users = await col_users.find({}, {"_id":1,"name":1,"email":1,"role":1,"department":1}).to_list(500)
+    else:
+        team = await col_users.find({"manager_id": u["id"]}, {"_id":1,"name":1,"email":1,"role":1,"department":1}).to_list(200)
+        self_doc = await col_users.find_one({"_id": ObjectId(u["id"])})
+        all_users = team + ([self_doc] if self_doc else [])
+
+    for usr in all_users:
+        uid = str(usr["_id"])
+        if uid not in user_info:
+            user_info[uid] = {"name": usr.get("name",""), "email": usr.get("email",""),
+                              "role": usr.get("role",""), "dept": usr.get("department","")}
+
+    today_str = now_ist.strftime("%Y-%m-%d")
+    buf = io.StringIO()
+    w   = csv.writer(buf)
+
+    # Header row: Name, Email, Role, Dept, Day1, Day2 ... Total P, Total A, %
+    day_headers = []
+    weekend_days = set()
+    for d in range(1, days_in_month + 1):
+        date_obj = dt_mod.date(year, month, d)
+        day_headers.append(f"{d}\n{date_obj.strftime('%a')}")
+        if date_obj.weekday() >= 5:
+            weekend_days.add(f"{year}-{month:02d}-{d:02d}")
+
+    w.writerow(["Employee Name", "Email", "Role", "Department"] +
+               day_headers + ["Present", "Absent", "Working Days", "Attendance %"])
+
+    for uid, info in sorted(user_info.items(), key=lambda x: x[1]["name"].lower()):
+        row = [info["name"], info["email"], info["role"], info["dept"]]
+        present = absent = 0
+        for d in range(1, days_in_month + 1):
+            ds = f"{year}-{month:02d}-{d:02d}"
+            if ds in weekend_days:
+                row.append("WE")
+            elif ds > today_str:
+                row.append("—")
+            elif (uid, ds) in present_map:
+                row.append("P"); present += 1
+            else:
+                row.append("A"); absent += 1
+        working = days_in_month - len(weekend_days)
+        pct = round(present / working * 100, 1) if working else 0
+        row += [present, absent, working, f"{pct}%"]
+        w.writerow(row)
+
+    buf.seek(0)
+    fname = f"attendance_{year}_{month:02d}.csv"
+    return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={fname}"})
