@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone, timedelta
-IST = timezone(timedelta(hours=0, minutes=0))
+IST = timezone(timedelta(hours=5, minutes=30))
 from bson import ObjectId
 import jwt
 import bcrypt
