@@ -1115,6 +1115,7 @@ async function doLogin(){
     document.getElementById('lscreen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     await boot();
+    setTimeout(onAfterLoginHRMS, 600);
   }catch(e){er.textContent=e.message||'Login failed. Please try again.';er.classList.remove('hidden');}
   finally{btn.disabled=false;document.getElementById('ltxt').textContent='Sign In';}
 }
@@ -1137,7 +1138,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
   const th=localStorage.getItem('ct_th')||'light';setTheme(th,false);
   const sc=localStorage.getItem('ct_col');if(sc)setPrimary(sc);
   if(t&&u){TOK=t;CU=JSON.parse(u);
-    try{CU=await api('GET','/api/me');document.getElementById('lscreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');await boot();}
+    try{CU=await api('GET','/api/me');document.getElementById('lscreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');await boot();setTimeout(onAfterLoginHRMS,600);}
     catch{logout();}
   }
 });
@@ -1229,7 +1230,8 @@ function goPage(p, el) {
   if (p === 'reports')      loadReports();
   if (p === 'admin')        loadAdmin();
   if (p === 'task-history') renderTaskHistory();
-  if (p === 'attendance')   loadAttendance();
+  if (p === 'attendance')   { loadAttendance(); loadDashboardCards(); loadTodayAttendance(); loadSecurityInfo(); }
+  if (p === 'leaves')        { setupLeavesPage(); loadLeaves(); }
   document.getElementById('sidebar').classList.remove('open');
 }
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');}
@@ -2302,7 +2304,7 @@ async function loadAttendance() {
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">⏳ Loading attendance records...</td></tr>';
 
   // Populate filter dropdown if admin/manager
-  await populateAttUserFilter();
+  if (typeof populateAttUserFilter === 'function') await populateAttUserFilter();
 
   // Build query params
   const from  = document.getElementById('att-from')?.value || '';
@@ -2587,13 +2589,8 @@ async function exportMonthlyCSV() {
 let _allLeaves = [];      // cached leaves for client-side filter
 let _pendingLeaveAction = { id: null, action: null };
 
-// ── HOOK goPage for new pages ─────────────────────────────────────────────────
-const _origGoPage = goPage;
-function goPage(p, el) {
-  _origGoPage(p, el);
-  if (p === 'leaves')     { setupLeavesPage(); loadLeaves(); }
-  if (p === 'attendance') { loadDashboardCards(); loadTodayAttendance(); loadSecurityInfo(); }
-}
+// ── HOOK goPage for new pages — injected safely into existing function ───────
+// (no override needed — cases added directly to original goPage above)
 
 // ── REPORT TABS ───────────────────────────────────────────────────────────────
 function switchRTab(tab, btn) {
@@ -3164,21 +3161,19 @@ async function cancelLeave(id) {
 }
 
 // ── POPULATE ATT SUMMARY USER FILTER (for Reports page) ──────────────────────
-(function() {
-  const origSetupAtt = setupAttendancePage;
-  window.setupAttendancePage = function() {
-    origSetupAtt();
-    // Also populate ratt-user filter
-    const rattUser = document.getElementById('ratt-user');
-    if (rattUser && rattUser.options.length <= 1 && USERS.length) {
-      USERS.forEach(u => {
+function populateReportUserFilters() {
+  // Populate ratt-user filter in Reports > Attendance Summary tab
+  const rattUser = document.getElementById('ratt-user');
+  if (rattUser && rattUser.options.length <= 1 && typeof USERS !== 'undefined' && USERS && USERS.length) {
+    USERS.forEach(u => {
+      if (!Array.from(rattUser.options).some(o => o.value === u.id)) {
         const o = document.createElement('option');
         o.value = u.id; o.textContent = u.name;
         rattUser.appendChild(o);
-      });
-    }
-  };
-})();
+      }
+    });
+  }
+}
 
 // ── OVERRIDE switchAttTab to use var(--p) instead of var(--accent) ────────────
 function switchAttTab(tab) {
@@ -3203,16 +3198,23 @@ async function refreshLeaveBadge() {
   } catch(e) {}
 }
 
-// ── Hook into afterLogin to load leave badge and set default months ───────────
-const _origAfterLogin = window.afterLogin;
-if (_origAfterLogin) {
-  window.afterLogin = async function(user, token) {
-    await _origAfterLogin(user, token);
-    refreshLeaveBadge();
-    // Set default months for new pickers
-    const nowM = new Date().toISOString().slice(0,7);
-    ['ratt-month','rconsol-month'].forEach(id => { const e=document.getElementById(id); if(e&&!e.value) e.value=nowM; });
-  };
+// ── Set default month pickers and leave badge on page load ───────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  const nowM = new Date().toISOString().slice(0,7);
+  ['ratt-month','rconsol-month','att-month-picker'].forEach(id => {
+    const e = document.getElementById(id);
+    if (e && !e.value) e.value = nowM;
+  });
+});
+
+// Called after successful login (hook into existing login flow safely)
+function onAfterLoginHRMS() {
+  refreshLeaveBadge();
+  populateReportUserFilters();
+  const nowM = new Date().toISOString().slice(0,7);
+  ['ratt-month','rconsol-month','att-month-picker'].forEach(id => {
+    const e = document.getElementById(id); if (e && !e.value) e.value = nowM;
+  });
 }
 
 </script>
