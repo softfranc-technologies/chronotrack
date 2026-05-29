@@ -1787,7 +1787,7 @@ async def security_info(request: Request, u=Depends(get_current_user)):
         "server_time_iso": now.isoformat(),
         "ip_address": ip,
         "user_agent": ua,
-        "timezone": "IST (UTC+5:30)",
+        "timezone": "IST (UTC+0:0)",
     }
 
 
