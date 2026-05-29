@@ -166,6 +166,69 @@ kbd{display:inline-block;padding:.1rem .35rem;border-radius:4px;background:var(-
 @media(max-width:480px){.sgrid{grid-template-columns:1fr}.tdisp{font-size:1.75rem}}
 @media(max-width:600px){#timer-inputs{grid-template-columns:1fr!important}}
 @media(max-width:600px){#timer-inputs .fg[style*="grid-column"]{grid-column:1!important}}
+
+/* ═══ HRMS ATTENDANCE SYSTEM — NEW STYLES ═══ */
+.s-present{background:rgba(16,185,129,.15);color:#059669}
+.s-late{background:rgba(245,158,11,.15);color:#d97706}
+.s-half_day{background:rgba(99,102,241,.15);color:#6366f1}
+.s-absent{background:rgba(239,68,68,.15);color:#dc2626}
+.s-on_leave{background:rgba(6,182,212,.15);color:#0891b2}
+.s-pending{background:rgba(245,158,11,.15);color:var(--warn)}
+.s-approved{background:rgba(16,185,129,.15);color:var(--ok)}
+.s-rejected{background:rgba(239,68,68,.15);color:var(--err)}
+
+/* Leave status pill */
+.leave-pill{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .65rem;border-radius:100px;font-size:.72rem;font-weight:700}
+.lv-sick{background:rgba(239,68,68,.1);color:#dc2626}
+.lv-casual{background:rgba(99,102,241,.1);color:#6366f1}
+.lv-paid{background:rgba(16,185,129,.1);color:#059669}
+
+/* Check-in/out widget */
+.checkin-widget{background:linear-gradient(135deg,rgba(79,70,229,.08),rgba(6,182,212,.05));border:1px solid rgba(79,70,229,.2);border-radius:var(--r);padding:1.25rem;margin-bottom:1.5rem}
+.cw-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.cw-time{font-family:var(--fd);font-size:1.6rem;font-weight:800;color:var(--p);min-width:90px}
+.cw-label{font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.cw-status{display:flex;align-items:center;gap:.5rem}
+.security-card{background:var(--sf2);border:1px dashed var(--bd);border-radius:var(--rs);padding:.875rem 1rem;font-size:.8rem;margin-top:.75rem}
+.security-card .sec-row{display:flex;gap:.5rem;margin-bottom:.3rem}.security-card .sec-row:last-child{margin-bottom:0}
+.sec-lbl{color:var(--muted);min-width:100px;flex-shrink:0}
+.sec-val{font-weight:500;word-break:break-all}
+
+/* Summary cards with trend arrows */
+.sc-warn{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.25)}
+.sc-err{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2)}
+.sc-ok{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.2)}
+.sval-ok{color:var(--ok)}.sval-err{color:var(--err)}.sval-warn{color:var(--warn)}
+
+/* Consolidated report table */
+.cons-tbl{width:100%;border-collapse:collapse;font-size:.82rem}
+.cons-tbl th{padding:.55rem .8rem;text-align:left;background:var(--sf2);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);border-bottom:2px solid var(--bd);white-space:nowrap}
+.cons-tbl td{padding:.6rem .8rem;border-bottom:1px solid var(--bd);vertical-align:middle}
+.cons-tbl tr:hover td{background:var(--sf2)}
+.cons-tbl .num{text-align:right;font-family:var(--fd);font-weight:700}
+.cons-tbl .center{text-align:center}
+.prod-bar{height:6px;border-radius:3px;background:var(--bd);overflow:hidden;min-width:60px}
+.prod-fill{height:100%;border-radius:3px;transition:width .4s ease}
+
+/* Att status pills in table */
+.att-P{background:#dcfce7;color:#15803d;font-weight:700;padding:.1rem .45rem;border-radius:4px;font-size:.75rem}
+.att-L{background:#fef9c3;color:#a16207;font-weight:700;padding:.1rem .45rem;border-radius:4px;font-size:.75rem}
+.att-HD{background:#ede9fe;color:#6d28d9;font-weight:700;padding:.1rem .45rem;border-radius:4px;font-size:.75rem}
+.att-A{background:#fee2e2;color:#dc2626;font-weight:700;padding:.1rem .45rem;border-radius:4px;font-size:.75rem}
+.att-LV{background:#e0f2fe;color:#0369a1;font-weight:700;padding:.1rem .45rem;border-radius:4px;font-size:.75rem}
+.att-WE{color:var(--muted);font-size:.7rem;padding:.1rem .3rem}
+
+/* Print styles for PDF */
+@media print{
+  .navbar,.sidebar,.tc2,.ha,.btn,.mo,.nbell,.avmenu,.att-export-btn,.att-refresh-btn{display:none!important}
+  .mc{padding:0!important;overflow:visible!important}
+  .page{display:block!important}
+  body{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .card{break-inside:avoid;box-shadow:none!important;border:1px solid #e2e8f0!important}
+  .print-header{display:block!important;padding:1rem 0;border-bottom:2px solid #4F46E5;margin-bottom:1rem}
+}
+.print-header{display:none}
+
 </style>
 </head>
 <body>
@@ -225,6 +288,7 @@ kbd{display:inline-block;padding:.1rem .35rem;border-radius:4px;background:var(-
       <div class="nitem" data-page="reports" onclick="goPage('reports',this)"><span class="nico">📈</span><span>Reports</span></div>
       <div class="nitem adm-only hidden" data-page="admin" onclick="goPage('admin',this)"><span class="nico">⚙️</span><span>Admin</span></div>
       <div class="nitem" data-page="attendance" onclick="goPage('attendance',this)"><span class="nico">📋</span><span>Attendance</span></div>
+      <div class="nitem" data-page="leaves" onclick="goPage('leaves',this)"><span class="nico">🏖</span><span>Leave Mgmt</span><span id="lvbadge" class="nbadge hidden" style="position:static;margin-left:auto">0</span></div>
       <div class="nitem" data-page="settings" onclick="goPage('settings',this)"><span class="nico">🔧</span><span>Settings</span></div>
     </nav>
     <div class="sfooter"><div id="suser" class="suser"></div><div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:8px;">Made by Sneha Dwivedi</div></div>
@@ -363,23 +427,87 @@ kbd{display:inline-block;padding:.1rem .35rem;border-radius:4px;background:var(-
 </div>
 
     <div id="page-reports" class="page hidden">
-      <div class="ph"><h2>Reports &amp; Analytics</h2><div class="ha"><button class="btn bg" onclick="exportCSV()">⬇ Export CSV</button></div></div>
-      <div class="card rfilters" style="margin-bottom:1rem">
-        <div class="frow">
-          <div class="fg"><label>From</label><input type="date" id="rfrom" class="ism"/></div>
-          <div class="fg"><label>To</label><input type="date" id="rto" class="ism"/></div>
-          <div class="fg adm-only hidden"><label>Employee</label><select id="ruser" class="ssm"><option value="">All</option></select></div>
-          <button class="btn bp" onclick="loadReports()">Generate</button>
+      <div class="print-header"><h2 style="font-family:var(--fd);font-weight:800;font-size:1.4rem;color:var(--p)">⏱ ChronoTrack — HRMS Report</h2><p id="print-subtitle" style="color:var(--muted);font-size:.85rem"></p></div>
+      <div class="ph">
+        <div><h2>Reports &amp; Analytics</h2><p class="sub">Time tracking, attendance &amp; productivity insights</p></div>
+        <div class="ha">
+          <button class="btn bg" onclick="exportCSV()">⬇ CSV</button>
+          <button class="btn bg" onclick="printReport()">🖨 PDF/Print</button>
         </div>
       </div>
-      <div class="sgrid" id="rstats"></div>
-      <div class="cg">
-        <div class="card"><div class="ch"><h3>Hours per Day</h3></div><canvas id="rbar" height="160"></canvas></div>
-        <div class="card"><div class="ch"><h3>Billable vs Non-Billable</h3></div><canvas id="rpie" height="160"></canvas></div>
-        <div class="card"><div class="ch"><h3>Weekly Trend</h3></div><canvas id="rline" height="160"></canvas></div>
-        <div class="card adm-only hidden"><div class="ch"><h3>Team Utilization</h3></div><canvas id="rutil" height="160"></canvas></div>
+
+      <!-- Report Tabs -->
+      <div class="tabs" style="margin-bottom:1.25rem">
+        <button class="tab active" id="rtab-time"    onclick="switchRTab('time',this)">⏱ Time Report</button>
+        <button class="tab"        id="rtab-att"     onclick="switchRTab('att',this)">📅 Attendance Summary</button>
+        <button class="tab"        id="rtab-consol"  onclick="switchRTab('consol',this)">📊 Consolidated</button>
       </div>
-      <div class="card" style="margin-top:1rem"><div class="ch"><h3>Revenue by Project</h3></div><div id="revtbl"></div></div>
+
+      <!-- ── TIME REPORT TAB ─────────────────────────────────── -->
+      <div id="rpanel-time">
+        <div class="card rfilters" style="margin-bottom:1rem">
+          <div class="frow">
+            <div class="fg"><label>From</label><input type="date" id="rfrom" class="ism"/></div>
+            <div class="fg"><label>To</label><input type="date" id="rto" class="ism"/></div>
+            <div class="fg adm-only hidden"><label>Employee</label><select id="ruser" class="ssm"><option value="">All</option></select></div>
+            <button class="btn bp" onclick="loadReports()">Generate</button>
+          </div>
+        </div>
+        <div class="sgrid" id="rstats"></div>
+        <div class="cg">
+          <div class="card"><div class="ch"><h3>Hours per Day</h3></div><canvas id="rbar" height="160"></canvas></div>
+          <div class="card"><div class="ch"><h3>Billable vs Non-Billable</h3></div><canvas id="rpie" height="160"></canvas></div>
+          <div class="card"><div class="ch"><h3>Weekly Trend</h3></div><canvas id="rline" height="160"></canvas></div>
+          <div class="card adm-only hidden"><div class="ch"><h3>Team Utilization</h3></div><canvas id="rutil" height="160"></canvas></div>
+        </div>
+        <div class="card" style="margin-top:1rem"><div class="ch"><h3>Revenue by Project</h3></div><div id="revtbl"></div></div>
+      </div>
+
+      <!-- ── ATTENDANCE SUMMARY TAB ────────────────────────────── -->
+      <div id="rpanel-att" style="display:none">
+        <div class="card rfilters" style="margin-bottom:1rem">
+          <div class="frow">
+            <div class="fg"><label>Month</label><input type="month" id="ratt-month" class="ism"/></div>
+            <div class="fg adm-only hidden"><label>Employee</label><select id="ratt-user" class="ssm"><option value="">All</option></select></div>
+            <button class="btn bp" onclick="loadAttSummary()">Generate</button>
+          </div>
+        </div>
+        <!-- My summary cards -->
+        <div class="sgrid" id="att-summary-cards" style="margin-bottom:1.5rem"></div>
+        <!-- Summary Table -->
+        <div class="card">
+          <div class="ch"><h3>Monthly Attendance Summary</h3><span id="att-sum-count" style="font-size:.8rem;color:var(--muted)"></span></div>
+          <div style="overflow-x:auto"><div id="att-summary-table"><div style="text-align:center;color:var(--muted);padding:2rem">Select a month and click Generate</div></div></div>
+        </div>
+      </div>
+
+      <!-- ── CONSOLIDATED REPORT TAB ────────────────────────────── -->
+      <div id="rpanel-consol" style="display:none">
+        <div class="card rfilters" style="margin-bottom:1rem">
+          <div class="frow">
+            <div class="fg"><label>Month</label><input type="month" id="rconsol-month" class="ism"/></div>
+            <div class="fg adm-only hidden"><label>Department</label>
+              <select id="rconsol-dept" class="ssm">
+                <option value="">All Departments</option>
+                <option value="Engineering">Engineering</option>
+                <option value="Backend">Backend</option>
+                <option value="Frontend">Frontend</option>
+                <option value="QA">QA</option>
+                <option value="AI/ML">AI/ML</option>
+                <option value="Design">Design</option>
+                <option value="DevOps">DevOps</option>
+                <option value="Product">Product</option>
+                <option value="HR">HR</option>
+              </select>
+            </div>
+            <button class="btn bp" onclick="loadConsolidated()">Generate</button>
+            <button class="btn bg" onclick="exportConsolidatedCSV()">⬇ Export CSV</button>
+          </div>
+        </div>
+        <div id="consol-report-container">
+          <div style="text-align:center;color:var(--muted);padding:3rem">Select a month and click Generate</div>
+        </div>
+      </div>
     </div>
 
     <div id="page-admin" class="page hidden">
@@ -434,10 +562,66 @@ kbd{display:inline-block;padding:.1rem .35rem;border-radius:4px;background:var(-
           <div class="sub" id="att-subtitle">Track login-based attendance of all employees</div>
         </div>
         <div class="ha">
-          <button class="btn bg bsm adm-mgr-only" onclick="exportAttendance()">⬇ Export CSV</button>
-          <button class="btn bp bsm" onclick="loadAttendance()">↻ Refresh</button>
+          <button class="btn bg bsm adm-mgr-only" id="att-export-btn" onclick="exportAttendance()">⬇ Export CSV</button>
+          <button class="btn bp bsm" id="att-refresh-btn" onclick="refreshAttPage()">↻ Refresh</button>
         </div>
       </div>
+
+      <!-- ── TODAY CHECK-IN / CHECK-OUT WIDGET ─────────────────── -->
+      <div id="checkin-widget" class="checkin-widget" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+          <div>
+            <div style="font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem">TODAY'S ATTENDANCE</div>
+            <div class="cw-row">
+              <div>
+                <div class="cw-label">Check-In</div>
+                <div class="cw-time" id="cw-checkin">—</div>
+              </div>
+              <div style="color:var(--bd);font-size:1.5rem">→</div>
+              <div>
+                <div class="cw-label">Check-Out</div>
+                <div class="cw-time" id="cw-checkout">—</div>
+              </div>
+              <div>
+                <div class="cw-label">Hours Worked</div>
+                <div class="cw-time" id="cw-hours" style="font-size:1.4rem">—</div>
+              </div>
+              <div class="cw-status">
+                <span id="cw-status-badge" class="sb">—</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+            <button class="btn bp" id="checkout-btn" onclick="doCheckout()" style="display:none">🏁 Check Out</button>
+            <button class="btn bg bsm" onclick="loadTodayAttendance()">↻ Refresh</button>
+          </div>
+        </div>
+        <!-- Security info -->
+        <div class="security-card" id="security-info-card">
+          <div class="sec-row"><span class="sec-lbl">🕐 Server Time:</span><span class="sec-val" id="sec-server-time">Loading...</span></div>
+          <div class="sec-row"><span class="sec-lbl">🌐 IP Address:</span><span class="sec-val" id="sec-ip">Loading...</span></div>
+          <div class="sec-row"><span class="sec-lbl">💻 Device:</span><span class="sec-val" id="sec-device" style="max-width:400px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Loading...</span></div>
+        </div>
+      </div>
+
+      <!-- ── ADMIN DASHBOARD SUMMARY CARDS ───────────────────── -->
+      <div id="att-dashboard-cards" class="sgrid adm-mgr-only" style="display:none;margin-bottom:1.5rem">
+        <div class="sc sc-ok"><div class="slbl">✅ Total Employees</div><div class="sval sval-ok" id="dash-total">—</div><div class="ssub">registered</div></div>
+        <div class="sc sc-ok"><div class="slbl">🟢 Present Today</div><div class="sval sval-ok" id="dash-present">—</div><div class="ssub">checked in</div></div>
+        <div class="sc sc-err"><div class="slbl">🔴 Absent Today</div><div class="sval sval-err" id="dash-absent">—</div><div class="ssub">not checked in</div></div>
+        <div class="sc sc-warn"><div class="slbl">🟡 Late Today</div><div class="sval sval-warn" id="dash-late">—</div><div class="ssub">arrived late</div></div>
+        <div class="sc"><div class="slbl">📋 Half Day</div><div class="sval" id="dash-halfday">—</div><div class="ssub">partial day</div></div>
+        <div class="sc sc-warn"><div class="slbl">🏖 On Leave</div><div class="sval sval-warn" id="dash-leave">—</div><div class="ssub">approved leave</div></div>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:.5rem;margin-bottom:1.2rem;border-bottom:2px solid var(--bd)">
+        <button class="att-tab active" id="tab-daily" onclick="switchAttTab('daily')" style="padding:.5rem 1.2rem;border:none;background:none;cursor:pointer;font-weight:600;font-size:.9rem;color:var(--p);border-bottom:2px solid var(--p);margin-bottom:-2px">📅 Daily Log</button>
+        <button class="att-tab" id="tab-monthly" onclick="switchAttTab('monthly')" style="padding:.5rem 1.2rem;border:none;background:none;cursor:pointer;font-weight:600;font-size:.9rem;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px">📊 Monthly Report (Enhanced)</button>
+      </div>
+
+      <!-- ── DAILY TAB ─────────────────────────────────────────── -->
+      <div id="att-daily-panel">
 
       <!-- Stat cards -->
       <div class="sgrid" id="att-stats">
@@ -464,6 +648,31 @@ kbd{display:inline-block;padding:.1rem .35rem;border-radius:4px;background:var(-
               <option value="">All Employees</option>
             </select>
           </div>
+          <div style="display:flex;flex-direction:column;gap:.3rem">
+            <label style="font-size:.75rem;color:var(--muted);font-weight:600">DEPARTMENT</label>
+            <select id="att-dept" class="ssm" onchange="loadAttendance()">
+              <option value="">All Depts</option>
+              <option value="Engineering">Engineering</option>
+              <option value="Backend">Backend</option>
+              <option value="Frontend">Frontend</option>
+              <option value="QA">QA</option>
+              <option value="AI/ML">AI/ML</option>
+              <option value="Design">Design</option>
+              <option value="DevOps">DevOps</option>
+              <option value="Product">Product</option>
+              <option value="HR">HR</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.3rem">
+            <label style="font-size:.75rem;color:var(--muted);font-weight:600">STATUS</label>
+            <select id="att-status-filter" class="ssm" onchange="loadAttendance()">
+              <option value="">All Statuses</option>
+              <option value="present">Present</option>
+              <option value="late">Late</option>
+              <option value="half_day">Half Day</option>
+              <option value="absent">Absent</option>
+            </select>
+          </div>
           <button class="btn bg bsm" onclick="clearAttFilters()">✕ Clear</button>
         </div>
       </div>
@@ -477,25 +686,200 @@ kbd{display:inline-block;padding:.1rem .35rem;border-radius:4px;background:var(-
               <tr>
                 <th>Date</th>
                 <th>Employee Name</th>
-                <th>Role</th>
                 <th>Department</th>
-                <th>Login Time</th>
+                <th>Check-In</th>
+                <th>Check-Out</th>
+                <th>Hours</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody id="att-tbody">
-              <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Loading...</td></tr>
+              <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">Loading...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
-    </div>
-    <!-- ═══════════════════════════════════════════════════════════ -->
+      </div><!-- /att-daily-panel -->
 
+      <!-- ── MONTHLY REPORT TAB ────────────────────────────────── -->
+      <div id="att-monthly-panel" style="display:none">
+        <div class="card" style="margin-bottom:1rem">
+          <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
+            <div style="display:flex;flex-direction:column;gap:.3rem">
+              <label style="font-size:.75rem;color:var(--muted);font-weight:600">MONTH</label>
+              <input type="month" id="att-month-picker" class="ism" onchange="loadMonthlyReport()"/>
+            </div>
+            <button class="btn bp bsm" onclick="loadMonthlyReport()">↻ Load</button>
+            <button class="btn bg bsm adm-mgr-only" onclick="exportMonthlyCSV()">⬇ Export CSV</button>
+          </div>
+        </div>
+        <div class="sgrid" style="margin-bottom:1rem" id="monthly-stat-cards">
+          <div class="sc"><div class="slbl">Month</div><div class="sval" id="ms-month" style="font-size:1.1rem">—</div></div>
+          <div class="sc"><div class="slbl">Total Employees</div><div class="sval" id="ms-emp">—</div></div>
+          <div class="sc"><div class="slbl">Working Days</div><div class="sval" id="ms-wdays">—</div></div>
+          <div class="sc"><div class="slbl">Avg Attendance</div><div class="sval" id="ms-avg">—</div><div class="ssub">across all employees</div></div>
+        </div>
+        <!-- Legend for Enhanced Report -->
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:.8rem;font-size:.79rem">
+          <span class="att-P">P</span> Present &nbsp;
+          <span class="att-L">L</span> Late &nbsp;
+          <span class="att-HD">HD</span> Half Day &nbsp;
+          <span class="att-A">A</span> Absent &nbsp;
+          <span class="att-LV">LV</span> On Leave &nbsp;
+          <span class="att-WE">WE</span> Weekend
+        </div>
+        <div class="card" style="overflow-x:auto">
+          <div id="monthly-report-table">
+            <div style="text-align:center;color:var(--muted);padding:3rem">Select a month and click Load</div>
+          </div>
+        </div>
+      </div><!-- /att-monthly-panel -->
+    </div><!-- /page-attendance -->
+
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- LEAVE MANAGEMENT PAGE                                     -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div id="page-leaves" class="page hidden">
+      <div class="ph">
+        <div>
+          <h2>Leave Management</h2>
+          <p class="sub" id="leaves-subtitle">Submit and track leave requests</p>
+        </div>
+        <div class="ha">
+          <button class="btn bp" onclick="openLeaveModal()">+ Request Leave</button>
+        </div>
+      </div>
+
+      <!-- Summary cards (employee view) -->
+      <div class="sgrid" id="leave-summary-cards" style="margin-bottom:1.5rem">
+        <div class="sc lv-sick" style="background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.15)">
+          <div class="slbl">🤒 Sick Leave</div><div class="sval" id="lv-sick-count">—</div><div class="ssub">used this year</div>
+        </div>
+        <div class="sc lv-casual" style="background:rgba(99,102,241,.06);border-color:rgba(99,102,241,.15)">
+          <div class="slbl">☀️ Casual Leave</div><div class="sval" id="lv-casual-count">—</div><div class="ssub">used this year</div>
+        </div>
+        <div class="sc lv-paid" style="background:rgba(16,185,129,.06);border-color:rgba(16,185,129,.15)">
+          <div class="slbl">💰 Paid Leave</div><div class="sval" id="lv-paid-count">—</div><div class="ssub">used this year</div>
+        </div>
+        <div class="sc sc-warn">
+          <div class="slbl">⏳ Pending</div><div class="sval sval-warn" id="lv-pending-count">—</div><div class="ssub">awaiting approval</div>
+        </div>
+      </div>
+
+      <!-- Filters (admin/manager) -->
+      <div class="card adm-mgr-only" style="margin-bottom:1rem">
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:.3rem">
+            <label style="font-size:.75rem;color:var(--muted);font-weight:600">STATUS</label>
+            <select id="lv-filter-status" class="ssm" onchange="loadLeaves()">
+              <option value="">All</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.3rem">
+            <label style="font-size:.75rem;color:var(--muted);font-weight:600">LEAVE TYPE</label>
+            <select id="lv-filter-type" class="ssm" onchange="filterLeavesClient()">
+              <option value="">All Types</option>
+              <option value="sick">Sick</option>
+              <option value="casual">Casual</option>
+              <option value="paid">Paid</option>
+            </select>
+          </div>
+          <button class="btn bg bsm" onclick="clearLeaveFilters()">✕ Clear</button>
+        </div>
+      </div>
+
+      <!-- Leaves Table -->
+      <div class="card">
+        <div class="ch">
+          <h3>Leave Requests</h3>
+          <span id="lv-count" style="font-size:.8rem;color:var(--muted)"></span>
+        </div>
+        <div class="etw">
+          <table class="etbl" id="lv-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Leave Type</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Days</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Applied On</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="lv-tbody">
+              <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /page-leaves -->
   </main>
 </div>
 
 <!-- MODALS -->
+
+<!-- ══ LEAVE REQUEST MODAL ══════════════════════════════════════ -->
+<div id="leave-modal" class="mo hidden">
+  <div class="md mdsm">
+    <div class="mhdr">
+      <h3>🏖 Request Leave</h3>
+      <button class="ibtn" onclick="document.getElementById('leave-modal').classList.add('hidden')">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="fg">
+        <label>Leave Type *</label>
+        <select id="lv-type" class="ssm">
+          <option value="sick">🤒 Sick Leave</option>
+          <option value="casual">☀️ Casual Leave</option>
+          <option value="paid">💰 Paid Leave</option>
+        </select>
+      </div>
+      <div class="fg2">
+        <div class="fg"><label>From Date *</label><input type="date" id="lv-from" class="ism"/></div>
+        <div class="fg"><label>To Date *</label><input type="date" id="lv-to" class="ism"/></div>
+      </div>
+      <div id="lv-days-preview" style="font-size:.8rem;color:var(--muted);padding:.4rem 0"></div>
+      <div class="fg">
+        <label>Reason *</label>
+        <textarea id="lv-reason" rows="3" placeholder="Briefly describe the reason for leave..." style="resize:vertical"></textarea>
+      </div>
+      <div id="lv-err" class="errmsg hidden"></div>
+    </div>
+    <div class="mftr">
+      <button class="btn bg" onclick="document.getElementById('leave-modal').classList.add('hidden')">Cancel</button>
+      <button class="btn bp" onclick="submitLeave()">Submit Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LEAVE APPROVAL MODAL ══════════════════════════════════════ -->
+<div id="leave-action-modal" class="mo hidden">
+  <div class="md mdsm">
+    <div class="mhdr">
+      <h3 id="lv-action-title">Approve Leave</h3>
+      <button class="ibtn" onclick="document.getElementById('leave-action-modal').classList.add('hidden')">✕</button>
+    </div>
+    <div class="mbody">
+      <div id="lv-action-info" style="background:var(--sf2);border-radius:var(--rs);padding:.875rem;margin-bottom:.75rem;font-size:.875rem"></div>
+      <div class="fg">
+        <label>Comment (optional)</label>
+        <textarea id="lv-action-comment" rows="2" placeholder="Add a note..."></textarea>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="btn bg" onclick="document.getElementById('leave-action-modal').classList.add('hidden')">Cancel</button>
+      <button id="lv-action-confirm" class="btn bp" onclick="confirmLeaveAction()">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <div id="emodal" class="mo hidden">
   <div class="md">
     <div class="mhdr"><h3 id="emtitle">New Time Entry</h3><button class="ibtn" onclick="closeM('emodal')">✕</button></div>
@@ -2043,7 +2427,794 @@ function setupAttendancePage() {
     else sub.textContent = 'Track login-based attendance of all employees';
   }
 }
+// ── TAB SWITCHING ─────────────────────────────────────────────────────────────
+function switchAttTab(tab) {
+  document.getElementById('att-daily-panel').style.display   = tab === 'daily'   ? '' : 'none';
+  document.getElementById('att-monthly-panel').style.display = tab === 'monthly' ? '' : 'none';
+  document.getElementById('tab-daily').style.color        = tab === 'daily'   ? 'var(--accent)' : 'var(--muted)';
+  document.getElementById('tab-monthly').style.color      = tab === 'monthly' ? 'var(--accent)' : 'var(--muted)';
+  document.getElementById('tab-daily').style.borderBottomColor   = tab === 'daily'   ? 'var(--accent)' : 'transparent';
+  document.getElementById('tab-monthly').style.borderBottomColor = tab === 'monthly' ? 'var(--accent)' : 'transparent';
+  // Update export button behavior
+  const expBtn = document.getElementById('att-export-btn');
+  if (expBtn) {
+    expBtn.textContent = tab === 'monthly' ? '⬇ Export Monthly CSV' : '⬇ Export CSV';
+    expBtn.setAttribute('onclick', tab === 'monthly' ? 'exportMonthlyCSV()' : 'exportAttendance()');
+  }
+  if (tab === 'monthly') loadMonthlyReport();
+}
+
+function refreshAttPage() {
+  const activeTab = document.getElementById('att-monthly-panel').style.display === 'none' ? 'daily' : 'monthly';
+  if (activeTab === 'daily') loadAttendance(); else loadMonthlyReport();
+}
+
+// ── MONTHLY REPORT ─────────────────────────────────────────────────────────────
+async function loadMonthlyReport() {
+  const container = document.getElementById('monthly-report-table');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:3rem">⏳ Loading monthly report...</div>';
+
+  // Get selected month
+  const picker = document.getElementById('att-month-picker');
+  const val    = picker?.value; // "YYYY-MM"
+  let year, month;
+  if (val) {
+    [year, month] = val.split('-').map(Number);
+  } else {
+    const now = new Date();
+    year  = now.getFullYear();
+    month = now.getMonth() + 1;
+    if (picker) picker.value = `${year}-${String(month).padStart(2,'0')}`;
+  }
+
+  try {
+    const data = await api('GET', `/api/attendance/monthly-report?year=${year}&month=${month}`);
+
+    // Update summary cards
+    document.getElementById('ms-month').textContent = data.month_name || '—';
+    document.getElementById('ms-emp').textContent   = data.total_employees ?? '—';
+    const wdays = data.day_list?.filter(d => !d.is_weekend).length ?? '—';
+    document.getElementById('ms-wdays').textContent = wdays;
+
+    // Avg attendance %
+    if (data.rows?.length) {
+      const avg = data.rows.reduce((s, r) => s + (r.attendance_pct || 0), 0) / data.rows.length;
+      document.getElementById('ms-avg').textContent = avg.toFixed(1) + '%';
+    } else {
+      document.getElementById('ms-avg').textContent = '—';
+    }
+
+    if (!data.rows?.length) {
+      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:3rem">No data found for this month.</div>';
+      return;
+    }
+
+    // Build table
+    const cellStyle = (status) => {
+      if (status === 'P')  return 'background:#dcfce7;color:#15803d;font-weight:700';
+      if (status === 'A')  return 'background:#fee2e2;color:#dc2626;font-weight:700';
+      if (status === 'WE') return 'background:var(--bg2);color:var(--muted);font-size:.7rem';
+      return 'color:var(--muted);font-size:.8rem';
+    };
+
+    let html = `
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:.78rem;min-width:900px">
+        <thead>
+          <tr style="background:var(--bg2)">
+            <th style="text-align:left;padding:.5rem .7rem;position:sticky;left:0;background:var(--bg2);z-index:2;min-width:140px;border-bottom:2px solid var(--border)">Employee</th>
+            <th style="padding:.5rem .4rem;min-width:60px;border-bottom:2px solid var(--border)">Dept</th>
+            ${data.day_list.map(d => `
+              <th style="padding:.3rem .2rem;text-align:center;min-width:32px;border-bottom:2px solid var(--border);${d.is_weekend ? 'color:var(--muted)' : ''}">
+                <div style="font-weight:700">${d.day}</div>
+                <div style="font-size:.65rem;font-weight:400">${d.weekday}</div>
+              </th>`).join('')}
+            <th style="padding:.5rem .6rem;text-align:center;border-bottom:2px solid var(--border);background:var(--bg2);color:#10b981">P</th>
+            <th style="padding:.5rem .6rem;text-align:center;border-bottom:2px solid var(--border);background:var(--bg2);color:#ef4444">A</th>
+            <th style="padding:.5rem .6rem;text-align:center;border-bottom:2px solid var(--border);background:var(--bg2)">WD</th>
+            <th style="padding:.5rem .6rem;text-align:center;border-bottom:2px solid var(--border);background:var(--bg2)">%</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.rows.map((row, i) => `
+            <tr style="${i % 2 === 0 ? 'background:var(--bg)' : 'background:var(--bg2)'}">
+              <td style="padding:.45rem .7rem;position:sticky;left:0;background:inherit;z-index:1;border-bottom:1px solid var(--border)">
+                <div style="font-weight:600">${row.user_name}</div>
+                <div style="font-size:.7rem;color:var(--muted)">${row.user_role}</div>
+              </td>
+              <td style="padding:.45rem .4rem;color:var(--muted);border-bottom:1px solid var(--border);text-align:center">${row.department || '—'}</td>
+              ${row.days.map(d => `
+                <td title="${d.date}${d.login_time ? ' · ' + d.login_time : ''}"
+                    style="text-align:center;padding:.3rem .1rem;border-bottom:1px solid var(--border);${cellStyle(d.status)}">
+                  ${d.status}
+                </td>`).join('')}
+              <td style="text-align:center;padding:.45rem .4rem;font-weight:700;color:#10b981;border-bottom:1px solid var(--border)">${row.present_count}</td>
+              <td style="text-align:center;padding:.45rem .4rem;font-weight:700;color:#ef4444;border-bottom:1px solid var(--border)">${row.absent_count}</td>
+              <td style="text-align:center;padding:.45rem .4rem;color:var(--muted);border-bottom:1px solid var(--border)">${row.working_days}</td>
+              <td style="text-align:center;padding:.45rem .4rem;font-weight:700;border-bottom:1px solid var(--border);color:${row.attendance_pct >= 75 ? '#10b981' : row.attendance_pct >= 50 ? '#f59e0b' : '#ef4444'}">${row.attendance_pct}%</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);padding:.5rem .3rem;text-align:right">Generated: ${data.generated_at} &nbsp;|&nbsp; WD = Working Days &nbsp;|&nbsp; Hover cells for login time</div>
+    `;
+
+    container.innerHTML = html;
+
+  } catch(e) {
+    container.innerHTML = `<div class="errmsg">❌ ${e.message}</div>`;
+  }
+}
+
+async function exportMonthlyCSV() {
+  const picker = document.getElementById('att-month-picker');
+  const val    = picker?.value;
+  let year, month;
+  if (val) {
+    [year, month] = val.split('-').map(Number);
+  } else {
+    const now = new Date();
+    year = now.getFullYear(); month = now.getMonth() + 1;
+  }
+  const baseUrl = API || '';
+  const token   = localStorage.getItem('ct_tok') || '';
+  try {
+    const resp = await fetch(`${baseUrl}/api/attendance/monthly-export?year=${year}&month=${month}`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!resp.ok) { showT('Export failed', 'err'); return; }
+    const blob = await resp.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `attendance_${year}_${String(month).padStart(2,'0')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showT('Monthly report CSV downloaded ✅', 'ok');
+  } catch(e) {
+    showT('Export error: ' + e.message, 'err');
+  }
+}
 // ═══════════════════════════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HRMS ATTENDANCE REPORTING SYSTEM — NEW JS
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── GLOBAL STATE ─────────────────────────────────────────────────────────────
+let _allLeaves = [];      // cached leaves for client-side filter
+let _pendingLeaveAction = { id: null, action: null };
+
+// ── HOOK goPage for new pages ─────────────────────────────────────────────────
+const _origGoPage = goPage;
+function goPage(p, el) {
+  _origGoPage(p, el);
+  if (p === 'leaves')     { setupLeavesPage(); loadLeaves(); }
+  if (p === 'attendance') { loadDashboardCards(); loadTodayAttendance(); loadSecurityInfo(); }
+}
+
+// ── REPORT TABS ───────────────────────────────────────────────────────────────
+function switchRTab(tab, btn) {
+  ['time','att','consol'].forEach(t => {
+    document.getElementById('rpanel-' + t).style.display = t === tab ? '' : 'none';
+    const b = document.getElementById('rtab-' + t);
+    if (b) { b.classList.toggle('active', t === tab); }
+  });
+  if (tab === 'att')    loadAttSummary();
+  if (tab === 'consol') loadConsolidated();
+}
+
+// ── PRINT REPORT ──────────────────────────────────────────────────────────────
+function printReport() {
+  const sub = document.getElementById('print-subtitle');
+  if (sub) sub.textContent = 'Generated: ' + new Date().toLocaleString('en-IN', {timeZone:'Asia/Kolkata'});
+  window.print();
+}
+
+// ── ADMIN DASHBOARD CARDS ────────────────────────────────────────────────────
+async function loadDashboardCards() {
+  const el = document.getElementById('att-dashboard-cards');
+  if (!el || !['admin','manager'].includes(CU?.role)) return;
+  el.style.display = 'grid';
+  try {
+    const d = await api('GET', '/api/attendance/dashboard');
+    document.getElementById('dash-total').textContent   = d.total_employees ?? '—';
+    document.getElementById('dash-present').textContent = d.present_today   ?? '—';
+    document.getElementById('dash-absent').textContent  = d.absent_today    ?? '—';
+    document.getElementById('dash-late').textContent    = d.late_today      ?? '—';
+    document.getElementById('dash-halfday').textContent = d.half_day_today  ?? '—';
+    document.getElementById('dash-leave').textContent   = d.on_leave_today  ?? '—';
+  } catch(e) { console.warn('Dashboard cards failed:', e.message); }
+}
+
+// ── TODAY CHECK-IN / CHECK-OUT WIDGET ─────────────────────────────────────────
+async function loadTodayAttendance() {
+  const widget = document.getElementById('checkin-widget');
+  if (!widget) return;
+  widget.style.display = 'block';
+  try {
+    const rec = await api('GET', '/api/attendance/today');
+    const ciEl   = document.getElementById('cw-checkin');
+    const coEl   = document.getElementById('cw-checkout');
+    const hrEl   = document.getElementById('cw-hours');
+    const stBadge = document.getElementById('cw-status-badge');
+    const coBtn   = document.getElementById('checkout-btn');
+
+    ciEl.textContent = rec.login_time   ? rec.login_time.replace(' IST','') : (rec.checked_in ? '—' : 'Not Checked In');
+    coEl.textContent = rec.check_out_time ? rec.check_out_time.replace(' IST','') : '—';
+    hrEl.textContent = rec.hours_worked > 0 ? rec.hours_worked + 'h' : '—';
+
+    const statusLabels = {present:'✅ Present', late:'🟡 Late', half_day:'🟠 Half Day', absent:'🔴 Absent'};
+    const statusClass  = {present:'s-approved', late:'s-submitted', half_day:'s-draft', absent:'s-rejected'};
+    stBadge.textContent  = statusLabels[rec.status] || rec.status;
+    stBadge.className    = 'sb ' + (statusClass[rec.status] || 's-draft');
+
+    // Show checkout button only if checked in and not yet checked out
+    if (coBtn) coBtn.style.display = (rec.checked_in && !rec.checked_out) ? 'block' : 'none';
+  } catch(e) { console.warn('Today att failed:', e.message); }
+}
+
+async function doCheckout() {
+  const btn = document.getElementById('checkout-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Checking out...'; }
+  try {
+    const tzOff = -new Date().getTimezoneOffset();
+    await api('POST', '/api/attendance/checkout', { tz_offset_mins: tzOff });
+    showT('✅ Checked out successfully!', 'ok');
+    await loadTodayAttendance();
+    await loadAttendance();
+    await loadDashboardCards();
+  } catch(e) {
+    showT('❌ ' + e.message, 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🏁 Check Out'; }
+  }
+}
+
+// ── SECURITY INFO WIDGET ──────────────────────────────────────────────────────
+async function loadSecurityInfo() {
+  try {
+    const info = await api('GET', '/api/attendance/security-info');
+    const el = document.getElementById('sec-server-time');
+    const ip = document.getElementById('sec-ip');
+    const dev = document.getElementById('sec-device');
+    if (el)  el.textContent  = info.server_time;
+    if (ip)  ip.textContent  = info.ip_address;
+    if (dev) dev.textContent = info.user_agent;
+  } catch(e) {}
+}
+
+// ── ATTENDANCE TABLE (enhanced with checkout time, hours, status) ─────────────
+// Override the original loadAttendance with enhanced version
+async function loadAttendance() {
+  const tbody = document.getElementById('att-tbody');
+  const countEl = document.getElementById('att-count');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">⏳ Loading...</td></tr>';
+
+  await populateAttUserFilter();
+
+  const from   = document.getElementById('att-from')?.value   || '';
+  const to     = document.getElementById('att-to')?.value     || '';
+  const uid    = document.getElementById('att-user')?.value   || '';
+  const dept   = document.getElementById('att-dept')?.value   || '';
+  const status = document.getElementById('att-status-filter')?.value || '';
+  let qs = [];
+  if (from)   qs.push('from_date=' + from);
+  if (to)     qs.push('to_date='   + to);
+  if (uid)    qs.push('user_id='   + uid);
+  const query = qs.length ? '?' + qs.join('&') : '';
+
+  try {
+    const [records, stats] = await Promise.all([
+      api('GET', '/api/attendance' + query),
+      api('GET', '/api/attendance/stats' + query).catch(() => ({})),
+    ]);
+
+    document.getElementById('att-today').textContent = stats.today_present  ?? '—';
+    document.getElementById('att-total').textContent = stats.total_present_records ?? records.length;
+    document.getElementById('att-uniq').textContent  = stats.unique_employees ?? '—';
+    document.getElementById('att-max').textContent   = stats.most_days_present ?? '—';
+
+    // Client-side department + status filter
+    let filtered = records;
+    if (dept)   filtered = filtered.filter(r => (r.department || '') === dept);
+    if (status) filtered = filtered.filter(r => (r.status || 'present') === status);
+
+    if (countEl) countEl.textContent = filtered.length + ' record' + (filtered.length !== 1 ? 's' : '');
+
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No records found for selected filters.</td></tr>';
+      return;
+    }
+
+    const fmtDate = d => {
+      if (!d) return '—';
+      try { const [y,m,day] = d.split('-'); const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return day+' '+mo[+m-1]+' '+y; } catch { return d; }
+    };
+    const statusLbl = s => ({present:'✅ Present', late:'🟡 Late', half_day:'🟠 Half Day', absent:'🔴 Absent'})[s] || s;
+    const statusCls = s => ({present:'s-approved', late:'s-submitted', half_day:'s-draft', absent:'s-rejected'})[s] || 's-draft';
+
+    tbody.innerHTML = filtered.map(r => `
+      <tr>
+        <td><strong>${fmtDate(r.date)}</strong></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <div class="aav" style="width:28px;height:28px;font-size:.72rem;flex-shrink:0">${(r.user_name||'?')[0].toUpperCase()}</div>
+            <div><div style="font-weight:600">${r.user_name||'—'}</div><div style="font-size:.72rem;color:var(--muted)">${r.department||''}</div></div>
+          </div>
+        </td>
+        <td style="color:var(--muted);font-size:.82rem">${r.department||'—'}</td>
+        <td style="font-family:var(--fd);font-size:.9rem">${r.login_time ? r.login_time.replace(' IST','') : '—'}</td>
+        <td style="font-family:var(--fd);font-size:.9rem">${r.check_out_time ? r.check_out_time.replace(' IST','') : '—'}</td>
+        <td style="font-family:var(--fd);font-weight:700">${r.hours_worked > 0 ? r.hours_worked+'h' : '—'}</td>
+        <td><span class="sb ${statusCls(r.status || 'present')}">${statusLbl(r.status || 'present')}</span></td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="errmsg">❌ ${e.message}</div></td></tr>`;
+  }
+}
+
+function clearAttFilters() {
+  ['att-from','att-to','att-user','att-dept','att-status-filter'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  loadAttendance();
+}
+
+// ── ENHANCED MONTHLY REPORT (V2 with L/HD/LV) ────────────────────────────────
+async function loadMonthlyReport() {
+  const container = document.getElementById('monthly-report-table');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:3rem">⏳ Loading...</div>';
+
+  const picker = document.getElementById('att-month-picker');
+  const val = picker?.value;
+  let year, month;
+  if (val) { [year, month] = val.split('-').map(Number); }
+  else { const n = new Date(); year = n.getFullYear(); month = n.getMonth()+1; if(picker) picker.value = `${year}-${String(month).padStart(2,'0')}`; }
+
+  try {
+    const data = await api('GET', `/api/attendance/monthly-report-v2?year=${year}&month=${month}`);
+
+    document.getElementById('ms-month').textContent = data.month_name || '—';
+    document.getElementById('ms-emp').textContent   = data.total_employees ?? '—';
+    const wdays = data.day_list?.filter(d => !d.is_weekend).length ?? '—';
+    document.getElementById('ms-wdays').textContent = wdays;
+    if (data.rows?.length) {
+      const avg = data.rows.reduce((s,r) => s+(r.attendance_pct||0),0) / data.rows.length;
+      document.getElementById('ms-avg').textContent = avg.toFixed(1) + '%';
+    } else document.getElementById('ms-avg').textContent = '—';
+
+    if (!data.rows?.length) { container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:3rem">No data for this month.</div>'; return; }
+
+    const cellStyle = s => {
+      if (s==='P')  return 'background:#dcfce7;color:#15803d;font-weight:700';
+      if (s==='L')  return 'background:#fef9c3;color:#a16207;font-weight:700';
+      if (s==='HD') return 'background:#ede9fe;color:#6d28d9;font-weight:700;font-size:.65rem';
+      if (s==='A')  return 'background:#fee2e2;color:#dc2626;font-weight:700';
+      if (s==='LV') return 'background:#e0f2fe;color:#0369a1;font-weight:700;font-size:.65rem';
+      if (s==='WE') return 'color:var(--muted);font-size:.68rem';
+      return 'color:var(--muted);font-size:.78rem';
+    };
+
+    let html = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.77rem;min-width:900px">
+      <thead><tr style="background:var(--sf2)">
+        <th style="text-align:left;padding:.5rem .7rem;position:sticky;left:0;background:var(--sf2);z-index:2;min-width:130px;border-bottom:2px solid var(--bd)">Employee</th>
+        <th style="padding:.5rem .4rem;min-width:55px;border-bottom:2px solid var(--bd)">Dept</th>
+        ${data.day_list.map(d=>`<th style="padding:.3rem .15rem;text-align:center;min-width:30px;border-bottom:2px solid var(--bd);${d.is_weekend?'color:var(--muted)':''}"><div style="font-weight:700">${d.day}</div><div style="font-size:.6rem;font-weight:400">${d.weekday}</div></th>`).join('')}
+        <th style="padding:.4rem .5rem;text-align:center;border-bottom:2px solid var(--bd);color:#10b981">P</th>
+        <th style="padding:.4rem .5rem;text-align:center;border-bottom:2px solid var(--bd);color:#a16207">L</th>
+        <th style="padding:.4rem .5rem;text-align:center;border-bottom:2px solid var(--bd);color:#6d28d9">HD</th>
+        <th style="padding:.4rem .5rem;text-align:center;border-bottom:2px solid var(--bd);color:#dc2626">A</th>
+        <th style="padding:.4rem .5rem;text-align:center;border-bottom:2px solid var(--bd);color:#0369a1">LV</th>
+        <th style="padding:.4rem .5rem;text-align:center;border-bottom:2px solid var(--bd)">Hrs</th>
+        <th style="padding:.4rem .5rem;text-align:center;border-bottom:2px solid var(--bd)">%</th>
+      </tr></thead><tbody>
+      ${data.rows.map((row,i)=>`
+        <tr style="${i%2===0?'background:var(--bg)':'background:var(--sf2)'}">
+          <td style="padding:.42rem .7rem;position:sticky;left:0;background:inherit;z-index:1;border-bottom:1px solid var(--bd)">
+            <div style="font-weight:600;font-size:.8rem">${row.user_name}</div>
+            <div style="font-size:.68rem;color:var(--muted)">${row.user_role||''}</div>
+          </td>
+          <td style="padding:.42rem .4rem;color:var(--muted);border-bottom:1px solid var(--bd);text-align:center;font-size:.75rem">${row.department||'—'}</td>
+          ${row.days.map(d=>`<td title="${d.date}${d.login_time?' · '+d.login_time:''}${d.checkout_time?' → '+d.checkout_time:''}${d.hours?' ('+d.hours+'h)':''}" style="text-align:center;padding:.25rem .05rem;border-bottom:1px solid var(--bd);${cellStyle(d.status)}">${d.status}</td>`).join('')}
+          <td style="text-align:center;padding:.42rem .4rem;font-weight:700;color:#10b981;border-bottom:1px solid var(--bd)">${row.present_count||0}</td>
+          <td style="text-align:center;padding:.42rem .4rem;font-weight:700;color:#a16207;border-bottom:1px solid var(--bd)">${row.late_count||0}</td>
+          <td style="text-align:center;padding:.42rem .4rem;font-weight:700;color:#6d28d9;border-bottom:1px solid var(--bd)">${row.half_day_count||0}</td>
+          <td style="text-align:center;padding:.42rem .4rem;font-weight:700;color:#dc2626;border-bottom:1px solid var(--bd)">${row.absent_count||0}</td>
+          <td style="text-align:center;padding:.42rem .4rem;font-weight:700;color:#0369a1;border-bottom:1px solid var(--bd)">${row.leave_count||0}</td>
+          <td style="text-align:center;padding:.42rem .4rem;font-weight:600;border-bottom:1px solid var(--bd);font-size:.78rem">${row.total_hours||0}h</td>
+          <td style="text-align:center;padding:.42rem .4rem;font-weight:700;border-bottom:1px solid var(--bd);color:${row.attendance_pct>=75?'#10b981':row.attendance_pct>=50?'#f59e0b':'#ef4444'}">${row.attendance_pct}%</td>
+        </tr>`).join('')}
+      </tbody></table></div>
+      <div style="font-size:.7rem;color:var(--muted);padding:.4rem .3rem;text-align:right">Generated: ${data.generated_at} | P=Present L=Late HD=HalfDay A=Absent LV=Leave WE=Weekend | Hover cell for times</div>`;
+    container.innerHTML = html;
+  } catch(e) { container.innerHTML = `<div class="errmsg">❌ ${e.message}</div>`; }
+}
+
+// ── ATTENDANCE SUMMARY (for Reports page) ────────────────────────────────────
+async function loadAttSummary() {
+  const tblCont = document.getElementById('att-summary-table');
+  const cardsCont = document.getElementById('att-summary-cards');
+  if (!tblCont) return;
+  tblCont.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem">⏳ Loading...</div>';
+
+  const pickerVal = document.getElementById('ratt-month')?.value;
+  let year, month;
+  if (pickerVal) { [year, month] = pickerVal.split('-').map(Number); }
+  else { const n = new Date(); year = n.getFullYear(); month = n.getMonth()+1; }
+
+  const uid = document.getElementById('ratt-user')?.value || '';
+  let url = `/api/attendance/monthly-summary?year=${year}&month=${month}`;
+  if (uid) url += '&user_id=' + uid;
+
+  try {
+    const data = await api('GET', url);
+
+    // If single user (employee or filtered)
+    if (data.user_name) {
+      // Summary cards
+      if (cardsCont) cardsCont.innerHTML = `
+        <div class="sc sc-ok"><div class="slbl">✅ Present Days</div><div class="sval sval-ok">${data.present_days}</div><div class="ssub">of ${data.working_days} working days</div></div>
+        <div class="sc sc-err"><div class="slbl">❌ Absent Days</div><div class="sval sval-err">${data.absent_days}</div></div>
+        <div class="sc"><div class="slbl">🟠 Half Days</div><div class="sval">${data.half_days}</div></div>
+        <div class="sc sc-warn"><div class="slbl">🟡 Late Marks</div><div class="sval sval-warn">${data.late_marks}</div></div>
+        <div class="sc"><div class="slbl">🏖 Leave Days</div><div class="sval">${data.leave_count}</div></div>
+        <div class="sc"><div class="slbl">⏱ Total Hours</div><div class="sval">${data.total_hours}h</div></div>
+        <div class="sc"><div class="slbl">🔥 Overtime Days</div><div class="sval">${data.overtime_days}</div></div>
+        <div class="sc sc-ok"><div class="slbl">📊 Attendance</div><div class="sval sval-ok">${data.attendance_pct}%</div></div>`;
+      tblCont.innerHTML = `<div style="padding:1rem;color:var(--muted);font-size:.875rem">Showing summary for <strong>${data.user_name}</strong> — ${data.month_name}</div>`;
+      return;
+    }
+
+    // Admin/Manager multi-user table
+    if (cardsCont) cardsCont.innerHTML = '';
+    const doc = data;
+    const spanEl = document.getElementById('att-sum-count');
+    if (spanEl) spanEl.textContent = (doc.rows?.length||0) + ' employees';
+
+    if (!doc.rows?.length) { tblCont.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem">No data for this period.</div>'; return; }
+
+    let html = `<table class="cons-tbl"><thead><tr>
+      <th>Employee</th><th>Dept</th>
+      <th class="center">Present</th><th class="center">Absent</th>
+      <th class="center">Half Day</th><th class="center">Late</th>
+      <th class="center">Leave</th><th class="num">Hours</th>
+      <th class="num">OT Days</th><th class="center">Att %</th>
+    </tr></thead><tbody>`;
+    doc.rows.forEach((r, i) => {
+      const c = r.attendance_pct >= 75 ? '#10b981' : r.attendance_pct >= 50 ? '#f59e0b' : '#ef4444';
+      html += `<tr>
+        <td><strong>${r.user_name}</strong><div style="font-size:.72rem;color:var(--muted)">${r.user_email}</div></td>
+        <td style="color:var(--muted);font-size:.8rem">${r.department||'—'}</td>
+        <td class="center"><span class="att-P">${r.present_days}</span></td>
+        <td class="center"><span class="att-A">${r.absent_days}</span></td>
+        <td class="center"><span class="att-HD">${r.half_days}</span></td>
+        <td class="center"><span class="att-L">${r.late_marks}</span></td>
+        <td class="center"><span class="att-LV">${r.leave_count}</span></td>
+        <td class="num">${r.total_hours}h</td>
+        <td class="num">${r.overtime_days}</td>
+        <td class="center" style="font-weight:700;color:${c}">${r.attendance_pct}%</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    tblCont.innerHTML = html;
+  } catch(e) { tblCont.innerHTML = `<div class="errmsg">❌ ${e.message}</div>`; }
+}
+
+// ── CONSOLIDATED REPORT ───────────────────────────────────────────────────────
+async function loadConsolidated() {
+  const cont = document.getElementById('consol-report-container');
+  if (!cont) return;
+  cont.innerHTML = '<div style="text-align:center;color:var(--muted);padding:3rem">⏳ Loading consolidated report...</div>';
+
+  const pickerVal = document.getElementById('rconsol-month')?.value;
+  let year, month;
+  if (pickerVal) { [year, month] = pickerVal.split('-').map(Number); }
+  else { const n = new Date(); year = n.getFullYear(); month = n.getMonth()+1; }
+  const dept = document.getElementById('rconsol-dept')?.value || '';
+  let url = `/api/reports/consolidated?year=${year}&month=${month}`;
+  if (dept) url += '&department=' + encodeURIComponent(dept);
+
+  try {
+    const data = await api('GET', url);
+    if (!data.rows?.length) { cont.innerHTML = '<div style="text-align:center;color:var(--muted);padding:3rem">No data for selected filters.</div>'; return; }
+
+    let html = `
+      <div class="card" style="margin-bottom:1rem">
+        <div class="ch"><h3>📊 ${data.month_name} — Consolidated Report</h3>
+          <span style="font-size:.8rem;color:var(--muted)">${data.rows.length} employees · ${data.working_days} working days</span>
+        </div>
+        <div style="overflow-x:auto"><table class="cons-tbl">
+          <thead><tr>
+            <th>Employee</th><th>Dept</th><th>Type</th>
+            <th class="center">Present</th><th class="center">Absent</th>
+            <th class="center">Half</th><th class="center">Late</th>
+            <th class="center">Leave</th><th class="center">Att%</th>
+            <th class="num">Total Hrs</th><th class="num">Bill Hrs</th>
+            <th class="center">OT Days</th>
+            <th style="min-width:90px">Productivity</th>
+          </tr></thead><tbody>`;
+
+    data.rows.forEach(r => {
+      const attC  = r.attendance_pct  >= 75 ? '#10b981' : r.attendance_pct  >= 50 ? '#f59e0b' : '#ef4444';
+      const prodC = r.productivity_pct >= 75 ? '#10b981' : r.productivity_pct >= 50 ? '#f59e0b' : '#ef4444';
+      const typeBadge = r.employment_type === 'contract'
+        ? '<span style="font-size:.68rem;background:rgba(245,158,11,.15);color:#d97706;padding:.1rem .4rem;border-radius:3px">Contract</span>'
+        : '<span style="font-size:.68rem;background:rgba(16,185,129,.1);color:#059669;padding:.1rem .4rem;border-radius:3px">Payroll</span>';
+      html += `<tr>
+        <td><strong style="font-size:.85rem">${r.user_name}</strong><div style="font-size:.7rem;color:var(--muted)">${r.user_email}</div></td>
+        <td style="color:var(--muted);font-size:.8rem">${r.department||'—'}</td>
+        <td>${typeBadge}</td>
+        <td class="center"><span class="att-P">${r.present_days}</span></td>
+        <td class="center"><span class="att-A">${r.absent_days}</span></td>
+        <td class="center"><span class="att-HD">${r.half_days}</span></td>
+        <td class="center"><span class="att-L">${r.late_marks}</span></td>
+        <td class="center"><span class="att-LV">${r.leave_days}</span></td>
+        <td class="center" style="font-weight:700;color:${attC}">${r.attendance_pct}%</td>
+        <td class="num">${r.total_hours}h</td>
+        <td class="num">${r.billable_hours}h</td>
+        <td class="center" style="font-weight:700">${r.overtime_days}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:.4rem">
+            <div class="prod-bar" style="flex:1"><div class="prod-fill" style="width:${r.productivity_pct}%;background:${prodC}"></div></div>
+            <span style="font-size:.78rem;font-weight:700;color:${prodC};min-width:32px">${r.productivity_pct}%</span>
+          </div>
+        </td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>
+      <div style="font-size:.72rem;color:var(--muted);padding:.5rem .3rem;text-align:right">Generated: ${data.generated_at}</div>
+    </div>`;
+    cont.innerHTML = html;
+  } catch(e) { cont.innerHTML = `<div class="errmsg">❌ ${e.message}</div>`; }
+}
+
+async function exportConsolidatedCSV() {
+  const pickerVal = document.getElementById('rconsol-month')?.value;
+  let year, month;
+  if (pickerVal) { [year, month] = pickerVal.split('-').map(Number); }
+  else { const n = new Date(); year = n.getFullYear(); month = n.getMonth()+1; }
+  const dept = document.getElementById('rconsol-dept')?.value || '';
+  let url = `/api/reports/consolidated?year=${year}&month=${month}`;
+  if (dept) url += '&department=' + encodeURIComponent(dept);
+  try {
+    const data = await api('GET', url);
+    if (!data.rows?.length) { showT('No data to export', 'warn'); return; }
+    const headers = ['Employee','Email','Department','Type','Present','Absent','HalfDay','Late','Leave','Att%','TotalHours','BillableHours','OvertimeDays','Productivity%'];
+    const rows = data.rows.map(r => [r.user_name,r.user_email,r.department,r.employment_type,r.present_days,r.absent_days,r.half_days,r.late_marks,r.leave_days,r.attendance_pct,r.total_hours,r.billable_hours,r.overtime_days,r.productivity_pct]);
+    const csv = [headers, ...rows].map(r => r.map(v => JSON.stringify(v ?? '')).join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `consolidated_${year}_${String(month).padStart(2,'0')}.csv`; a.click();
+    showT('Consolidated CSV downloaded ✅', 'ok');
+  } catch(e) { showT('Export error: '+e.message,'err'); }
+}
+
+// ── LEAVE MANAGEMENT ──────────────────────────────────────────────────────────
+function setupLeavesPage() {
+  const sub = document.getElementById('leaves-subtitle');
+  if (sub) {
+    sub.textContent = CU?.role === 'employee'
+      ? 'Submit and track your leave requests'
+      : 'Manage and approve team leave requests';
+  }
+  const admRow = document.querySelectorAll('.adm-mgr-only');
+  admRow.forEach(el => el.classList.toggle('hidden', !['admin','manager'].includes(CU?.role)));
+}
+
+async function loadLeaves() {
+  const tbody = document.getElementById('lv-tbody');
+  const countEl = document.getElementById('lv-count');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem">⏳ Loading...</td></tr>';
+
+  const statusF = document.getElementById('lv-filter-status')?.value || '';
+  let url = '/api/leaves';
+  if (statusF) url += '?status=' + statusF;
+
+  try {
+    const leaves = await api('GET', url);
+    _allLeaves = leaves;
+
+    // Count summary cards
+    const now = new Date(); const thisYear = now.getFullYear();
+    const yearLeaves = leaves.filter(l => l.from_date?.startsWith(thisYear));
+    document.getElementById('lv-sick-count').textContent    = yearLeaves.filter(l=>l.leave_type==='sick'   && l.status!=='rejected').reduce((s,l)=>s+(l.days_count||0),0);
+    document.getElementById('lv-casual-count').textContent  = yearLeaves.filter(l=>l.leave_type==='casual' && l.status!=='rejected').reduce((s,l)=>s+(l.days_count||0),0);
+    document.getElementById('lv-paid-count').textContent    = yearLeaves.filter(l=>l.leave_type==='paid'   && l.status!=='rejected').reduce((s,l)=>s+(l.days_count||0),0);
+    document.getElementById('lv-pending-count').textContent = leaves.filter(l=>l.status==='pending').length;
+
+    // Pending badge in sidebar
+    const badge = document.getElementById('lvbadge');
+    const pCount = leaves.filter(l=>l.status==='pending').length;
+    if (badge) { badge.textContent = pCount; badge.classList.toggle('hidden', pCount === 0); }
+
+    if (countEl) countEl.textContent = leaves.length + ' request' + (leaves.length!==1?'s':'');
+    renderLeavesTable(leaves);
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="errmsg">❌ ${e.message}</div></td></tr>`;
+  }
+}
+
+function filterLeavesClient() {
+  const typeF = document.getElementById('lv-filter-type')?.value || '';
+  const filtered = typeF ? _allLeaves.filter(l => l.leave_type === typeF) : _allLeaves;
+  renderLeavesTable(filtered);
+}
+
+function renderLeavesTable(leaves) {
+  const tbody = document.getElementById('lv-tbody');
+  if (!tbody) return;
+  if (!leaves.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem">No leave requests found.</td></tr>';
+    return;
+  }
+  const typeLabel = {sick:'🤒 Sick', casual:'☀️ Casual', paid:'💰 Paid'};
+  const typeCls   = {sick:'lv-sick', casual:'lv-casual', paid:'lv-paid'};
+  const statusCls = {pending:'s-submitted', approved:'s-approved', rejected:'s-rejected'};
+  const fmtDate   = d => { if(!d)return'—'; try{const[y,m,day]=d.split('-');const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return day+' '+mo[+m-1]+' '+y;}catch{return d;} };
+  const isAdmMgr  = ['admin','manager'].includes(CU?.role);
+
+  tbody.innerHTML = leaves.map(l => `
+    <tr>
+      <td><strong>${l.user_name||'—'}</strong><div style="font-size:.72rem;color:var(--muted)">${l.user_email||''}</div></td>
+      <td><span class="leave-pill ${typeCls[l.leave_type]||''}">${typeLabel[l.leave_type]||l.leave_type}</span></td>
+      <td>${fmtDate(l.from_date)}</td>
+      <td>${fmtDate(l.to_date)}</td>
+      <td style="text-align:center;font-weight:700">${l.days_count||1}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:.82rem" title="${l.reason||''}">${l.reason||'—'}</td>
+      <td><span class="sb ${statusCls[l.status]||'s-draft'}">${l.status?.toUpperCase()||'—'}</span>${l.approver_name?`<div style="font-size:.7rem;color:var(--muted)">by ${l.approver_name}</div>`:''}</td>
+      <td style="font-size:.78rem;color:var(--muted)">${fmtDate(l.created_at?.slice(0,10))}</td>
+      <td>
+        <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+          ${isAdmMgr && l.status==='pending' ? `
+            <button class="btn bs bsm" onclick="openLeaveAction('${l.id}','approve')">✓ Approve</button>
+            <button class="btn bd_ bsm" onclick="openLeaveAction('${l.id}','reject')">✗ Reject</button>` : ''}
+          ${(l.user_id===CU?.id || isAdmMgr) && l.status==='pending' ? `
+            <button class="btn bg bsm" onclick="cancelLeave('${l.id}')">Cancel</button>` : ''}
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function clearLeaveFilters() {
+  ['lv-filter-status','lv-filter-type'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  loadLeaves();
+}
+
+function openLeaveModal() {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('lv-from').value  = today;
+  document.getElementById('lv-to').value    = today;
+  document.getElementById('lv-reason').value = '';
+  document.getElementById('lv-err').classList.add('hidden');
+  document.getElementById('lv-days-preview').textContent = '1 day';
+  document.getElementById('leave-modal').classList.remove('hidden');
+
+  // Live day count update
+  ['lv-from','lv-to'].forEach(id => document.getElementById(id)?.addEventListener('change', updateLvDaysPreview));
+}
+
+function updateLvDaysPreview() {
+  const f = document.getElementById('lv-from')?.value;
+  const t = document.getElementById('lv-to')?.value;
+  const pr = document.getElementById('lv-days-preview');
+  if (!f || !t || !pr) return;
+  const d1 = new Date(f), d2 = new Date(t);
+  if (d2 < d1) { pr.textContent = '⚠️ To date must be on or after From date'; pr.style.color='var(--err)'; return; }
+  const days = Math.round((d2-d1)/86400000)+1;
+  pr.textContent = days + ' day' + (days!==1?'s':'');
+  pr.style.color = 'var(--ok)';
+}
+
+async function submitLeave() {
+  const type   = document.getElementById('lv-type').value;
+  const from   = document.getElementById('lv-from').value;
+  const to     = document.getElementById('lv-to').value;
+  const reason = document.getElementById('lv-reason').value.trim();
+  const errEl  = document.getElementById('lv-err');
+  errEl.classList.add('hidden');
+  if (!from || !to || !reason) { errEl.textContent='All fields are required.'; errEl.classList.remove('hidden'); return; }
+  if (new Date(to) < new Date(from)) { errEl.textContent='To date must be after From date.'; errEl.classList.remove('hidden'); return; }
+  try {
+    await api('POST', '/api/leaves', {leave_type:type, from_date:from, to_date:to, reason});
+    document.getElementById('leave-modal').classList.add('hidden');
+    showT('Leave request submitted ✅', 'ok');
+    loadLeaves();
+  } catch(e) { errEl.textContent = e.message; errEl.classList.remove('hidden'); }
+}
+
+function openLeaveAction(id, action) {
+  _pendingLeaveAction = {id, action};
+  const lv = _allLeaves.find(l => l.id === id);
+  const titleEl = document.getElementById('lv-action-title');
+  const infoEl  = document.getElementById('lv-action-info');
+  const btnEl   = document.getElementById('lv-action-confirm');
+  if (titleEl) titleEl.textContent = (action==='approve' ? '✅ Approve' : '❌ Reject') + ' Leave Request';
+  if (infoEl && lv) infoEl.innerHTML = `<strong>${lv.user_name}</strong> — ${lv.leave_type} leave<br/>${lv.from_date} → ${lv.to_date} (${lv.days_count} day${lv.days_count!==1?'s':''})<br/><em>${lv.reason||''}</em>`;
+  if (btnEl) { btnEl.textContent = action==='approve'?'✅ Approve':'❌ Reject'; btnEl.className = 'btn '+(action==='approve'?'bs':'bd_'); }
+  document.getElementById('lv-action-comment').value = '';
+  document.getElementById('leave-action-modal').classList.remove('hidden');
+}
+
+async function confirmLeaveAction() {
+  const {id, action} = _pendingLeaveAction;
+  const comment = document.getElementById('lv-action-comment').value.trim();
+  if (!id || !action) return;
+  try {
+    await api('PUT', `/api/leaves/${id}/${action}`, {comment});
+    document.getElementById('leave-action-modal').classList.add('hidden');
+    showT(action==='approve'?'Leave approved ✅':'Leave rejected','ok');
+    loadLeaves();
+    loadDashboardCards();
+  } catch(e) { showT('Error: '+e.message,'err'); }
+}
+
+async function cancelLeave(id) {
+  if (!confirm('Cancel this leave request?')) return;
+  try {
+    await api('DELETE', '/api/leaves/' + id);
+    showT('Leave request cancelled','ok');
+    loadLeaves();
+  } catch(e) { showT('Error: '+e.message,'err'); }
+}
+
+// ── POPULATE ATT SUMMARY USER FILTER (for Reports page) ──────────────────────
+(function() {
+  const origSetupAtt = setupAttendancePage;
+  window.setupAttendancePage = function() {
+    origSetupAtt();
+    // Also populate ratt-user filter
+    const rattUser = document.getElementById('ratt-user');
+    if (rattUser && rattUser.options.length <= 1 && USERS.length) {
+      USERS.forEach(u => {
+        const o = document.createElement('option');
+        o.value = u.id; o.textContent = u.name;
+        rattUser.appendChild(o);
+      });
+    }
+  };
+})();
+
+// ── OVERRIDE switchAttTab to use var(--p) instead of var(--accent) ────────────
+function switchAttTab(tab) {
+  document.getElementById('att-daily-panel').style.display   = tab==='daily'   ? '' : 'none';
+  document.getElementById('att-monthly-panel').style.display = tab==='monthly' ? '' : 'none';
+  const dTab = document.getElementById('tab-daily');
+  const mTab = document.getElementById('tab-monthly');
+  if (dTab) { dTab.style.color = tab==='daily'?'var(--p)':'var(--muted)'; dTab.style.borderBottomColor = tab==='daily'?'var(--p)':'transparent'; }
+  if (mTab) { mTab.style.color = tab==='monthly'?'var(--p)':'var(--muted)'; mTab.style.borderBottomColor = tab==='monthly'?'var(--p)':'transparent'; }
+  const expBtn = document.getElementById('att-export-btn');
+  if (expBtn) { expBtn.textContent = tab==='monthly'?'⬇ Export Monthly CSV':'⬇ Export CSV'; expBtn.setAttribute('onclick', tab==='monthly'?'exportMonthlyCSV()':'exportAttendance()'); }
+  if (tab==='monthly') loadMonthlyReport();
+}
+
+// ── LEAVE BADGE on sidebar (loaded after login) ───────────────────────────────
+async function refreshLeaveBadge() {
+  if (!['admin','manager'].includes(CU?.role)) return;
+  try {
+    const leaves = await api('GET', '/api/leaves?status=pending');
+    const badge = document.getElementById('lvbadge');
+    if (badge) { badge.textContent = leaves.length; badge.classList.toggle('hidden', leaves.length===0); }
+  } catch(e) {}
+}
+
+// ── Hook into afterLogin to load leave badge and set default months ───────────
+const _origAfterLogin = window.afterLogin;
+if (_origAfterLogin) {
+  window.afterLogin = async function(user, token) {
+    await _origAfterLogin(user, token);
+    refreshLeaveBadge();
+    // Set default months for new pickers
+    const nowM = new Date().toISOString().slice(0,7);
+    ['ratt-month','rconsol-month'].forEach(id => { const e=document.getElementById(id); if(e&&!e.value) e.value=nowM; });
+  };
+}
+
 </script>
 </body>
 </html>
